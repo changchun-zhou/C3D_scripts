@@ -226,7 +226,7 @@ def get_10x_lr_Threshold(model):
     """
     This generator returns all the parameters for the last fc layer of the net.
     """
-    yield model.module.Threshold
+    yield model.Threshold
 
 if __name__ == "__main__":
     inputs = torch.rand(1, 3, 16, 112, 112)
