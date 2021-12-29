@@ -7,6 +7,8 @@ import torchsnooper
 import timeit
 from torch.autograd import Variable
 import json
+import numpy as np
+
 class C3D(nn.Module):
     """
     The C3D network.
@@ -19,6 +21,10 @@ class C3D(nn.Module):
         self.Threshold = nn.Parameter(torch.Tensor(json.loads(conf.get('fine', 'init_threshold'))), requires_grad = conf.getboolean('fine', 'requires_grad' ) )
 
         self.register_parameter('Threshold',self.Threshold)
+        self.tdvd_range = 2
+        self.tdvd_proportion = ( np.zeros([(self.tdvd_range*2 + 1)*8]) ).tolist()
+        self.scale_factor = 1
+        self.tdvd_permute_dim = (2, 0, 1, 3, 4)
 
         self.conv1 = nn.Conv3d(3, 64, kernel_size=(3, 3, 3), padding=(1, 1, 1))
         self.pool1 = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
@@ -68,11 +74,23 @@ class C3D(nn.Module):
     # @torchsnooper.snoop()
 
     # batch_num, c_num, f_num, h, w= tensor_in.size()
+    def diffbase(self, tensor_in):
+        return torch.cat([(tensor_in.permute(self.tdvd_permute_dim))[0].unsqueeze(0), (tensor_in.permute(self.tdvd_permute_dim))[1:] - (tensor_in.permute(self.tdvd_permute_dim))[:-1]], dim=0)
+    def reverseint(self, tensor):
+        # return ( tensor*(tensor >= 0) ).ceil() + ( tensor*(tensor <= 0) ).floor()
+        return tensor.round()
+    def stat_tdvd_proportion(self,x, layer_idx):
+        for value in range(-self.tdvd_range, self.tdvd_range + 1):
+            self.tdvd_proportion[ value + self.tdvd_range + (self.tdvd_range*2 + 1)* layer_idx] += (self.reverseint(self.diffbase(x)*self.scale[layer_idx]*self.scale_factor)==value).nonzero().size()[0]/x.numel()*100
+            print("layer: {} self.scale: {}".format(layer_idx, self.scale))
+            # print("x : \n\r{} \n\r{}".format(x[0][0][0][3][0:6].cpu().detach().numpy(), x[0][0][1][3][0:6].cpu().detach().numpy()))
+
     def threshold(self, tensor_in, Threshold= 1, scale = 1.0):
 
+        # statistic distribution
 
         Threshold = Threshold/scale
-
+        # print("******* func_threshold scale: {}".format(scale))
         tensor_in = tensor_in.permute(2, 0, 1, 3, 4) #(f_num, batch_num, c_num, h, w)
         front, back = tensor_in[:-1], tensor_in[1:]
         diff = back - front
@@ -105,46 +123,49 @@ class C3D(nn.Module):
         Layer_Depth = 4
         
         # Switch, scale= self.Switch, self.scale
+        # print("self.Threshold:{}".format(self.Threshold))
+        # print("self.scale:{}".format(self.scale))
         scale = self.scale
         # print('origin x[0][2][59][60][40:48]: {}'.format(x[0][2][1][2][10:20].cpu().detach().numpy()))
         # print('origin x[0][2][60][60][40:48]: {}'.format(x[0][2][2][2][10:20].cpu().detach().numpy()))        
         # x = self.threshold(x, torch.zeros([1]).to('cuda:0'), 0.2)
         # print('thresh x[0][2][60][60][40:48]: {}'.format(x[0][2][2][2][10:20].cpu().detach().numpy()))
+        self.stat_tdvd_proportion(x, 0)
         x = self.threshold(x,  self.Threshold[0], scale[0])
 
         x = self.relu1(self.conv1(x))
         x = self.pool1(x)
-
+        self.stat_tdvd_proportion(x, 1)
         x = self.threshold(x,  self.Threshold[1], scale[1])
 
         x = self.relu2(self.conv2(x))
         x = self.pool2(x)
 
-
+        self.stat_tdvd_proportion(x, 2)
         x = self.threshold(x, self.Threshold[2], scale[2])
         # print('finish threshold:'+str(timeit.default_timer()))
         torch.cuda.empty_cache()
         x = self.relu3(self.conv3a(x))
-
+        self.stat_tdvd_proportion(x, 3)
         x = self.threshold(x,  self.Threshold[3], scale[3])
 
         x = self.relu4(self.conv3b(x))
         x = self.pool3(x)
 
-
+        self.stat_tdvd_proportion(x, 4)
         x = self.threshold(x,  self.Threshold[4], scale[4])
 
         x = self.relu5(self.conv4a(x))
 
- 
+        self.stat_tdvd_proportion(x, 5)
         x = self.threshold(x, self.Threshold[5], scale[5])
         x = self.relu6(self.conv4b(x))
         x = self.pool4(x)
-
+        self.stat_tdvd_proportion(x, 6)
         x = self.threshold(x,  self.Threshold[6], scale[6])
         x = self.relu7(self.conv5a(x))
 
-
+        self.stat_tdvd_proportion(x, 7)
         x = self.threshold(x, self.Threshold[7], scale[7])
         x = self.relu8(self.conv5b(x))
         x = self.pool5(x)

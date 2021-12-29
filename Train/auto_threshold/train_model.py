@@ -50,6 +50,8 @@ def get_activation(name):
 def remove_file(filename):
     if os.path.exists(filename):
         os.remove(filename)
+def get_tdvd_proportion(model, nsamples):
+    return [x/nsamples for x in model.module.tdvd_proportion]
 
 def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, lr,
                 nEpochs,resume_epoch,batch_size, save_epoch, useTest, test_interval,
@@ -137,7 +139,9 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 scale_threshold.append(model.module.relu5.fake_q.scale.item())
                 scale_threshold.append(model.module.relu6.fake_q.scale.item())
                 scale_threshold.append(model.module.relu7.fake_q.scale.item())
-                model.scale = scale_threshold
+                model.module.scale = scale_threshold
+                # print("****************** test model.scale :{} \n\r scale_threshold: {}".format(model.module.scale, scale_threshold))
+                # print("model.module.Threshold: {}".format(model.module.Threshold.cpu().detach().numpy()))
                 torch.cuda.empty_cache()
                 # print('start train batch:'+str(timeit.default_timer()))
                 #if args.narrow_inputs : # Because YAML quantize_inputs True 8
@@ -274,7 +278,9 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 run_number += 1
                 #if phase == 'train':
                 minibatch_id = minibatch_id + 1
-
+                tdvd_nsamples = batch_size*minibatch_id + len(trainval_loaders[phase])*(epoch-resume_epoch)
+                to_csv.to_csv(save_dir + '/tdvd_range_'+ str(model.module.tdvd_range)+'_scale_factor_'+str(model.module.scale_factor)+'.csv', \
+                    tdvd_nsamples, get_tdvd_proportion(model, tdvd_nsamples))
             epoch_loss = running_loss / trainval_sizes[phase]
             epoch_acc = running_corrects.double() / trainval_sizes[phase]
 
