@@ -1,18 +1,14 @@
-import numpy as np
-import time    
+
 import sys
-import copy
 #from Function_self import Function
 sys.path.append("./scripts/Train/auto_threshold/")
 sys.path.append("./distiller/")
 import train_model
 sys.setrecursionlimit(1000000)
 sys.path.append("../pytorch-video-recognition-master/")
-import logging
 import argparse
 from distiller.data_loggers import *
 from torch.utils.data import DataLoader
-import distiller.apputils.image_classifier as ic
 import torch
 import distiller
 from distiller.quantization.range_linear import PostTrainLinearQuantizer
@@ -23,40 +19,19 @@ import torch.nn as nn
 import os
 import shutil
 import C3D_model_th
-import timeit
-from datetime import datetime
-import socket
-#import os
+
 import glob
-from tqdm import tqdm
-import math
+
 import torch.onnx
-#from tensorboardX import SummaryWriter
-from torchsummary import summary
 from torch import optim
-#from torch.utils.data import DataLoader
-from torch.autograd import Variable
 
-from dataloaders.dataset import VideoDataset
 import get_logger
-from scheduler_add_policy import scheduler_add_policy
+
 import json
-
-
 
 
 torch.cuda.empty_cache()
 parser = argparse.ArgumentParser()
-# parser.add_argument('--compress',dest='compress',type=str,nargs='?',action='store')
-# parser.add_argument('--batch_size',dest='batch_size',type=int,default=1)
-# #parser.add_argument('--policy',dest='policy',action='store_true')
-# # parser.add_argument('--name',dest='name',type=str)
-# parser.add_argument('--device',dest='device',type=str,nargs='?')
-# parser.add_argument('--narrow_inputs',dest='narrow_inputs',action='store_true')
-# parser.add_argument('--extract',dest='extract',action='store_true')
-# parser.add_argument('--dequant',dest='dequant',action='store_true')
-# parser.add_argument('--resume-from',dest='resumed_checkpoint_path',default='',\
-#     type=str, metavar='PATH',help='path to latest checkpoint. Use to resume paused training session.')
 distiller.quantization.add_post_train_quant_args(parser)
 
 parser.add_argument('--init',dest='init',type=str,nargs='?',action='store')
@@ -77,10 +52,8 @@ conf_name = conf.get('fine','prefix') + '_' + conf.get('set', 'user') + '_lambda
 conf_compress = str(conf.get('set','compress'))
 print(conf_compress)
 conf_batch_size = int(conf.get('set', 'batch_size'))
-# conf_resumed_checkpoint_path = conf.get('set', 'resumed_checkpoint_path')
 
 ##############################################################
-
 postquant_pth = 'Extract/prune_high_ele/run/run_4/models/C3D-ucf101_epoch-10.pth.tar' 
 device = torch.device('cuda:0')
 # device = torch.device('cuda:'+conf.get('set', 'device_ids').lstrip('[').rstrip(']'))
@@ -155,8 +128,6 @@ if modelName == 'C3D':
 else:
     print('We only implemented C3D and R2Plus1D models.')
     raise NotImplementedError
-
-
 
 optimizer = optim.SGD(train_params, lr=lr, momentum=0.9, weight_decay=5e-4)
 # optimizer = optim.Adam(train_params, lr=lr)
