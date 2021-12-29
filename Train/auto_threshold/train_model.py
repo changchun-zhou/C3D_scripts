@@ -80,7 +80,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
     epoch_old = 0
     for epoch in range(resume_epoch, nEpochs):
 
-        Threshold_requires_grad = conf.getboolean('fine', 'requires_grad' ) and epoch > conf.getint('set', 'epoch_start_valtest')
+        Threshold_requires_grad = conf.getboolean('fine', 'requires_grad' ) and epoch > conf.getint('fine', 'epoch_start_th_learn')
         model.module.Threshold.requires_grad = Threshold_requires_grad
 
         epoch_start_time=time.time()
