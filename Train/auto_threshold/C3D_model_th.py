@@ -21,7 +21,7 @@ class C3D(nn.Module):
         self.Threshold = nn.Parameter(torch.Tensor(json.loads(conf.get('fine', 'init_threshold'))), requires_grad = conf.getboolean('fine', 'requires_grad' ) )
 
         self.register_parameter('Threshold',self.Threshold)
-        self.tdvd_range = 2
+        self.tdvd_range = 10
         self.tdvd_proportion = ( np.zeros([(self.tdvd_range*2 + 1)*8]) ).tolist()
         self.scale_factor = 1
         self.tdvd_permute_dim = (2, 0, 1, 3, 4)
@@ -69,29 +69,20 @@ class C3D(nn.Module):
 
         if pretrained:
             self.__load_pretrained_weights()
-        # self.threshold()
-    # def forward(self, x):
-    # @torchsnooper.snoop()
 
-    # batch_num, c_num, f_num, h, w= tensor_in.size()
     def diffbase(self, tensor_in):
         return torch.cat([(tensor_in.permute(self.tdvd_permute_dim))[0].unsqueeze(0), (tensor_in.permute(self.tdvd_permute_dim))[1:] - (tensor_in.permute(self.tdvd_permute_dim))[:-1]], dim=0)
     def reverseint(self, tensor):
-        # return ( tensor*(tensor >= 0) ).ceil() + ( tensor*(tensor <= 0) ).floor()
         return tensor.round()
     def stat_tdvd_proportion(self,x, layer_idx):
         for value in range(-self.tdvd_range, self.tdvd_range + 1):
             self.tdvd_proportion[ value + self.tdvd_range + (self.tdvd_range*2 + 1)* layer_idx] += (self.reverseint(self.diffbase(x)*self.scale[layer_idx]*self.scale_factor)==value).nonzero().size()[0]/x.numel()*100
-            print("layer: {} self.scale: {}".format(layer_idx, self.scale))
-            # print("x : \n\r{} \n\r{}".format(x[0][0][0][3][0:6].cpu().detach().numpy(), x[0][0][1][3][0:6].cpu().detach().numpy()))
 
     def threshold(self, tensor_in, Threshold= 1, scale = 1.0):
 
-        # statistic distribution
-
         Threshold = Threshold/scale
-        # print("******* func_threshold scale: {}".format(scale))
-        tensor_in = tensor_in.permute(2, 0, 1, 3, 4) #(f_num, batch_num, c_num, h, w)
+
+        tensor_in = tensor_in.permute(2, 0, 1, 3, 4)
         front, back = tensor_in[:-1], tensor_in[1:]
         diff = back - front
 
@@ -103,33 +94,10 @@ class C3D(nn.Module):
 
         return tensor_out
 
-        # Threshold = nn.ReLU()(Threshold).round()/scale
-        # diff *= torch.square(diff) > torch.square(Threshold)
-        # diff = torch.where(diff > Threshold, diff, diff*0)
-        # x = diff - Threshold
-        # x = nn.ReLU()(x)
-        # y =-(diff + Threshold)
-        # y = nn.ReLU()(y)
-        # diff = x - y
-        # diff = diff - Threshold
-        # pos =  nn.ReLU()(  diff + Threshold  )
-        # neg = -nn.ReLU()(-(diff - Threshold) )
-        # diff = pos + neg
-        # pos = torch.where(x > 0, x+Threshold, x*0)
-        # neg = torch.where(y > 0, -y - Threshold, -y*0)
-        # diff = pos + neg
-
     def forward(self,x):
-        Layer_Depth = 4
-        
-        # Switch, scale= self.Switch, self.scale
-        # print("self.Threshold:{}".format(self.Threshold))
-        # print("self.scale:{}".format(self.scale))
+
         scale = self.scale
-        # print('origin x[0][2][59][60][40:48]: {}'.format(x[0][2][1][2][10:20].cpu().detach().numpy()))
-        # print('origin x[0][2][60][60][40:48]: {}'.format(x[0][2][2][2][10:20].cpu().detach().numpy()))        
-        # x = self.threshold(x, torch.zeros([1]).to('cuda:0'), 0.2)
-        # print('thresh x[0][2][60][60][40:48]: {}'.format(x[0][2][2][2][10:20].cpu().detach().numpy()))
+
         self.stat_tdvd_proportion(x, 0)
         x = self.threshold(x,  self.Threshold[0], scale[0])
 
@@ -143,7 +111,7 @@ class C3D(nn.Module):
 
         self.stat_tdvd_proportion(x, 2)
         x = self.threshold(x, self.Threshold[2], scale[2])
-        # print('finish threshold:'+str(timeit.default_timer()))
+
         torch.cuda.empty_cache()
         x = self.relu3(self.conv3a(x))
         self.stat_tdvd_proportion(x, 3)
@@ -178,7 +146,7 @@ class C3D(nn.Module):
         x = self.dropout2(x)
 
         logits = self.fc8(x)
-        # print('finish inference:'+str(timeit.default_timer()))
+
         torch.cuda.empty_cache()
         return logits
 
@@ -229,8 +197,6 @@ class C3D(nn.Module):
     def __init_weight(self):
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
-                # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                # m.weight.data.normal_(0, math.sqrt(2. / n))
                 torch.nn.init.kaiming_normal_(m.weight)
             elif isinstance(m, nn.BatchNorm3d):
                 m.weight.data.fill_(1)
@@ -260,7 +226,7 @@ def get_10x_lr_Threshold(model):
     """
     This generator returns all the parameters for the last fc layer of the net.
     """
-    yield model.Threshold
+    yield model.module.Threshold
 
 if __name__ == "__main__":
     inputs = torch.rand(1, 3, 16, 112, 112)
