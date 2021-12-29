@@ -1,0 +1,80 @@
+version: 1
+pruners:
+    conv1_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.30
+        weights: [conv1.weight]
+
+    conv2_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.70
+        weights: [conv2.weight]
+
+    conv3_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.90
+        weights: [conv3a.weight,conv3b.weight]
+
+    conv4_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.95
+        weights: [conv4a.weight,conv4b.weight]
+
+    conv5_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.95
+        weights: [conv5a.weight,conv5b.weight]
+
+    fc67_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.95
+        weights: [fc6.weight,fc7.weight]
+
+    fc8_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.70
+        weights: [fc8.weight]
+
+policies:
+    - pruner:
+          instance_name: conv1_pruner
+      starting_epoch: 1
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv2_pruner
+      starting_epoch: 1
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv3_pruner
+      starting_epoch: 1
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv4_pruner
+      starting_epoch: 1
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv5_pruner
+      starting_epoch: 1
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: fc67_pruner
+      starting_epoch: 1
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: fc8_pruner
+      starting_epoch: 1
+      ending_epoch: 30
+      frequency: 1

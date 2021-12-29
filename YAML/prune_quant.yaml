@@ -1,0 +1,745 @@
+version: 1
+pruners:
+    conv1_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.20
+        weights: [conv1.float_weight]
+
+    conv2_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.50
+        weights: [conv2.float_weight]
+
+    conv3_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.85
+        weights: [conv3a.float_weight,conv3b.float_weight]
+
+    conv4_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.93
+        weights: [conv4a.float_weight,conv4b.float_weight]
+
+    conv5_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.95
+        weights: [conv5a.float_weight,conv5b.float_weight]
+
+    fc67_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.90
+        weights: [fc6.float_weight,fc7.float_weight]
+
+    fc8_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.70
+        weights: [fc8.float_weight]
+
+#######################################################
+quantizers:
+    linear_quantizer:
+        class: QuantAwareTrainRangeLinearQuantizer
+        bits_activations: 7
+        bits_weights: 8
+        bits_bias: 8
+        #bits_accum: 28
+        #bits_sca
+        mode: 'SYMMETRIC'
+        ema_decay: 0.999
+        per_channel_wts: True
+        quantize_inputs: True
+        num_bits_inputs: 7
+        overrides:
+            #conv1:
+                #bits_weights: null
+                #bits_activations: null
+                #bits_bias: null
+                #bits_accum: null
+            #relu1:
+                #bits_weights: null
+                #bits_activations: null
+                #bits_bias: null
+                #bits_accum: null
+            relu10:
+                bits_weights: null
+                bits_activations: null
+                bits_bias: null
+                #bits_accum: null
+            fc8:
+                bits_weights: null
+                bits_activations: null
+                bits_bias: null
+                #bits_accum: null
+                                             
+
+policies:
+    - pruner:
+          instance_name: conv1_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv2_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv3_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv4_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv5_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: fc67_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: fc8_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+
+###################################################
+    - quantizer:
+          instance_name: linear_quantizer
+      starting_epoch: 0
+      ending_epoch: 300
+      frequency: 1
+
+conv1:
+  inputs:
+    0:
+      min: -102.0
+      max: 165.0
+      avg_min: -101.99999015118196
+      avg_max: 163.99992507962497
+      mean: 4.2076895957386355
+      std: 0
+      b: 0
+      shape: (1, 3, 16, 112, 112)
+      total_numel: 1299959808
+  output:
+    min: -1130.7603759765625
+    max: 1150.744140625
+    avg_min: -874.6471032565627
+    avg_max: 811.5591898178772
+    mean: -0.09978969125297128
+    std: 0
+    b: 0
+    shape: (1, 64, 16, 112, 112)
+    total_numel: 27732475904
+pool1:
+  inputs:
+    0:
+      min: 0.0
+      max: 1150.744140625
+      avg_min: 0.0
+      avg_max: 811.5591898178772
+      mean: 14.64669771707665
+      std: 0
+      b: 0
+      shape: (1, 64, 16, 112, 112)
+      total_numel: 27732475904
+  output:
+    min: 0.0
+    max: 1150.744140625
+    avg_min: 0.0
+    avg_max: 811.5591469668854
+    mean: 22.518426379302337
+    std: 0
+    b: 0
+    shape: (1, 64, 16, 56, 56)
+    total_numel: 6933118976
+conv2:
+  inputs:
+    0:
+      min: 0.0
+      max: 1150.744140625
+      avg_min: 0.0
+      avg_max: 811.5591469668854
+      mean: 22.518426379302337
+      std: 0
+      b: 0
+      shape: (1, 64, 16, 56, 56)
+      total_numel: 6933118976
+  output:
+    min: -3789.337890625
+    max: 3329.025634765625
+    avg_min: -2379.72776068304
+    avg_max: 1461.4156726595286
+    mean: -40.13916072345502
+    std: 0
+    b: 0
+    shape: (1, 128, 16, 56, 56)
+    total_numel: 13866237952
+pool2:
+  inputs:
+    0:
+      min: 0.0
+      max: 3329.025634765625
+      avg_min: 0.0
+      avg_max: 1461.4156726595286
+      mean: 22.78267480606986
+      std: 0
+      b: 0
+      shape: (1, 128, 16, 56, 56)
+      total_numel: 13866237952
+  output:
+    min: 0.0
+    max: 3329.025634765625
+    avg_min: 0.0
+    avg_max: 1461.4158353749285
+    mean: 51.91462465449549
+    std: 0
+    b: 0
+    shape: (1, 128, 8, 28, 28)
+    total_numel: 1733279744
+conv3a:
+  inputs:
+    0:
+      min: 0.0
+      max: 3329.025634765625
+      avg_min: 0.0
+      avg_max: 1461.4158353749285
+      mean: 51.91462465449549
+      std: 0
+      b: 0
+      shape: (1, 128, 8, 28, 28)
+      total_numel: 1733279744
+  output:
+    min: -4237.140625
+    max: 3117.57568359375
+    avg_min: -2472.375460259196
+    avg_max: 1801.430669362925
+    mean: -36.705607705447434
+    std: 0
+    b: 0
+    shape: (1, 256, 8, 28, 28)
+    total_numel: 3466559488
+conv3b:
+  inputs:
+    0:
+      min: 0.0
+      max: 3117.57568359375
+      avg_min: 0.0
+      avg_max: 1801.430669362925
+      mean: 40.25848082431649
+      std: 0
+      b: 0
+      shape: (1, 256, 8, 28, 28)
+      total_numel: 3466559488
+  output:
+    min: -5726.87548828125
+    max: 3710.04296875
+    avg_min: -2363.61911624185
+    avg_max: 1396.5227177684828
+    mean: -157.8555660060838
+    std: 0
+    b: 0
+    shape: (1, 256, 8, 28, 28)
+    total_numel: 3466559488
+pool3:
+  inputs:
+    0:
+      min: 0.0
+      max: 3710.04296875
+      avg_min: 0.0
+      avg_max: 1396.5227177684828
+      mean: 11.046525879494725
+      std: 0
+      b: 0
+      shape: (1, 256, 8, 28, 28)
+      total_numel: 3466559488
+  output:
+    min: 0.0
+    max: 3710.04296875
+    avg_min: 0.0
+    avg_max: 1396.5270789226756
+    mean: 36.96127275517287
+    std: 0
+    b: 0
+    shape: (1, 256, 4, 14, 14)
+    total_numel: 433319936
+conv4a:
+  inputs:
+    0:
+      min: 0.0
+      max: 3710.04296875
+      avg_min: 0.0
+      avg_max: 1396.5270789226756
+      mean: 36.96127275517287
+      std: 0
+      b: 0
+      shape: (1, 256, 4, 14, 14)
+      total_numel: 433319936
+  output:
+    min: -2189.710205078125
+    max: 2235.87744140625
+    avg_min: -1009.3897580317904
+    avg_max: 743.7712292487944
+    mean: -59.99848750237284
+    std: 0
+    b: 0
+    shape: (1, 512, 4, 14, 14)
+    total_numel: 866639872
+conv4b:
+  inputs:
+    0:
+      min: 0.0
+      max: 2235.87744140625
+      avg_min: 0.0
+      avg_max: 743.7712292487944
+      mean: 20.267990477075625
+      std: 0
+      b: 0
+      shape: (1, 512, 4, 14, 14)
+      total_numel: 866639872
+  output:
+    min: -1620.974609375
+    max: 1610.099853515625
+    avg_min: -688.7792649652392
+    avg_max: 529.8867323450852
+    mean: -116.49866198401726
+    std: 0
+    b: 0
+    shape: (1, 512, 4, 14, 14)
+    total_numel: 866639872
+pool4:
+  inputs:
+    0:
+      min: 0.0
+      max: 1610.099853515625
+      avg_min: 0.0
+      avg_max: 529.8867323450852
+      mean: 2.9581271031472354
+      std: 0
+      b: 0
+      shape: (1, 512, 4, 14, 14)
+      total_numel: 866639872
+  output:
+    min: 0.0
+    max: 1610.099853515625
+    avg_min: 0.0
+    avg_max: 529.8983617006946
+    mean: 10.728616193445792
+    std: 0
+    b: 0
+    shape: (1, 512, 2, 7, 7)
+    total_numel: 108329984
+conv5a:
+  inputs:
+    0:
+      min: 0.0
+      max: 1610.099853515625
+      avg_min: 0.0
+      avg_max: 529.8983617006946
+      mean: 10.728616193445792
+      std: 0
+      b: 0
+      shape: (1, 512, 2, 7, 7)
+      total_numel: 108329984
+  output:
+    min: -630.359130859375
+    max: 1025.96728515625
+    avg_min: -234.86144109528342
+    avg_max: 165.170597245815
+    mean: -28.37520237558376
+    std: 0
+    b: 0
+    shape: (1, 512, 2, 7, 7)
+    total_numel: 108329984
+conv5b:
+  inputs:
+    0:
+      min: 0.0
+      max: 1025.96728515625
+      avg_min: 0.0
+      avg_max: 165.170597245815
+      mean: 6.630863437240976
+      std: 0
+      b: 0
+      shape: (1, 512, 2, 7, 7)
+      total_numel: 108329984
+  output:
+    min: -444.7986145019531
+    max: 618.3615112304688
+    avg_min: -119.51645719501946
+    avg_max: 100.98649569992025
+    mean: -31.77207444997413
+    std: 0
+    b: 0
+    shape: (1, 512, 2, 7, 7)
+    total_numel: 108329984
+pool5:
+  inputs:
+    0:
+      min: 0.0
+      max: 618.3615112304688
+      avg_min: 0.0
+      avg_max: 100.98649569992025
+      mean: 0.8037311782640033
+      std: 0
+      b: 0
+      shape: (1, 512, 2, 7, 7)
+      total_numel: 108329984
+  output:
+    min: 0.0
+    max: 618.3615112304688
+    avg_min: 0.0
+    avg_max: 101.00967201307205
+    mean: 2.622337314418864
+    std: 0
+    b: 0
+    shape: (1, 512, 1, 4, 4)
+    total_numel: 17686528
+fc6:
+  inputs:
+    0:
+      min: 0.0
+      max: 618.3615112304688
+      avg_min: 0.0
+      avg_max: 101.00967201307205
+      mean: 2.622337314418864
+      std: 0
+      b: 0
+      shape: (1, 8192)
+      total_numel: 17686528
+  output:
+    min: -45.08852005004883
+    max: 53.80246353149414
+    avg_min: -12.463574540822833
+    avg_max: 12.437884527581634
+    mean: -0.5385474185737547
+    std: 0
+    b: 0
+    shape: (1, 4096)
+    total_numel: 8843264
+fc7:
+  inputs:
+    0:
+      min: 0.0
+      max: 53.80246353149414
+      avg_min: 0.0
+      avg_max: 12.437884527581634
+      mean: 1.7312728423882329
+      std: 0
+      b: 0
+      shape: (1, 4096)
+      total_numel: 8843264
+  output:
+    min: -15.8250150680542
+    max: 12.871698379516602
+    avg_min: -3.323736684708657
+    avg_max: 3.8797417176577125
+    mean: -0.43396957846459366
+    std: 0
+    b: 0
+    shape: (1, 4096)
+    total_numel: 8843264
+fc8:
+  inputs:
+    0:
+      min: 0.0
+      max: 12.871698379516602
+      avg_min: 0.0
+      avg_max: 3.8797417176577125
+      mean: 0.3488707172064501
+      std: 0
+      b: 0
+      shape: (1, 4096)
+      total_numel: 8843264
+  output:
+    min: -11.62882137298584
+    max: 50.897369384765625
+    avg_min: -5.060698734101761
+    avg_max: 8.616810835195297
+    mean: 0.018453524454149082
+    std: 0
+    b: 0
+    shape: (1, 101)
+    total_numel: 218059
+dropout1:
+  inputs:
+    0:
+      min: 0.0
+      max: 53.80246353149414
+      avg_min: 0.0
+      avg_max: 12.437884527581634
+      mean: 1.7312728423882329
+      std: 0
+      b: 0
+      shape: (1, 4096)
+      total_numel: 8843264
+  output:
+    min: 0.0
+    max: 53.80246353149414
+    avg_min: 0.0
+    avg_max: 12.437884527581634
+    mean: 1.7312728423882329
+    std: 0
+    b: 0
+    shape: (1, 4096)
+    total_numel: 8843264
+dropout2:
+  inputs:
+    0:
+      min: 0.0
+      max: 12.871698379516602
+      avg_min: 0.0
+      avg_max: 3.8797417176577125
+      mean: 0.3488707172064501
+      std: 0
+      b: 0
+      shape: (1, 4096)
+      total_numel: 8843264
+  output:
+    min: 0.0
+    max: 12.871698379516602
+    avg_min: 0.0
+    avg_max: 3.8797417176577125
+    mean: 0.3488707172064501
+    std: 0
+    b: 0
+    shape: (1, 4096)
+    total_numel: 8843264
+relu1:
+  inputs:
+    0:
+      min: -1130.7603759765625
+      max: 1150.744140625
+      avg_min: -874.6471032565627
+      avg_max: 811.5591898178772
+      mean: -0.09978969125297128
+      std: 0
+      b: 0
+      shape: (1, 64, 16, 112, 112)
+      total_numel: 27732475904
+  output:
+    min: 0.0
+    max: 1150.744140625
+    avg_min: 0.0
+    avg_max: 811.5591898178772
+    mean: 14.64669771707665
+    std: 0
+    b: 0
+    shape: (1, 64, 16, 112, 112)
+    total_numel: 27732475904
+relu2:
+  inputs:
+    0:
+      min: -3789.337890625
+      max: 3329.025634765625
+      avg_min: -2379.72776068304
+      avg_max: 1461.4156726595286
+      mean: -40.13916072345502
+      std: 0
+      b: 0
+      shape: (1, 128, 16, 56, 56)
+      total_numel: 13866237952
+  output:
+    min: 0.0
+    max: 3329.025634765625
+    avg_min: 0.0
+    avg_max: 1461.4156726595286
+    mean: 22.78267480606986
+    std: 0
+    b: 0
+    shape: (1, 128, 16, 56, 56)
+    total_numel: 13866237952
+relu3:
+  inputs:
+    0:
+      min: -4237.140625
+      max: 3117.57568359375
+      avg_min: -2472.375460259196
+      avg_max: 1801.430669362925
+      mean: -36.705607705447434
+      std: 0
+      b: 0
+      shape: (1, 256, 8, 28, 28)
+      total_numel: 3466559488
+  output:
+    min: 0.0
+    max: 3117.57568359375
+    avg_min: 0.0
+    avg_max: 1801.430669362925
+    mean: 40.25848082431649
+    std: 0
+    b: 0
+    shape: (1, 256, 8, 28, 28)
+    total_numel: 3466559488
+relu4:
+  inputs:
+    0:
+      min: -5726.87548828125
+      max: 3710.04296875
+      avg_min: -2363.61911624185
+      avg_max: 1396.5227177684828
+      mean: -157.8555660060838
+      std: 0
+      b: 0
+      shape: (1, 256, 8, 28, 28)
+      total_numel: 3466559488
+  output:
+    min: 0.0
+    max: 3710.04296875
+    avg_min: 0.0
+    avg_max: 1396.5227177684828
+    mean: 11.046525879494725
+    std: 0
+    b: 0
+    shape: (1, 256, 8, 28, 28)
+    total_numel: 3466559488
+relu5:
+  inputs:
+    0:
+      min: -2189.710205078125
+      max: 2235.87744140625
+      avg_min: -1009.3897580317904
+      avg_max: 743.7712292487944
+      mean: -59.99848750237284
+      std: 0
+      b: 0
+      shape: (1, 512, 4, 14, 14)
+      total_numel: 866639872
+  output:
+    min: 0.0
+    max: 2235.87744140625
+    avg_min: 0.0
+    avg_max: 743.7712292487944
+    mean: 20.267990477075625
+    std: 0
+    b: 0
+    shape: (1, 512, 4, 14, 14)
+    total_numel: 866639872
+relu6:
+  inputs:
+    0:
+      min: -1620.974609375
+      max: 1610.099853515625
+      avg_min: -688.7792649652392
+      avg_max: 529.8867323450852
+      mean: -116.49866198401726
+      std: 0
+      b: 0
+      shape: (1, 512, 4, 14, 14)
+      total_numel: 866639872
+  output:
+    min: 0.0
+    max: 1610.099853515625
+    avg_min: 0.0
+    avg_max: 529.8867323450852
+    mean: 2.9581271031472354
+    std: 0
+    b: 0
+    shape: (1, 512, 4, 14, 14)
+    total_numel: 866639872
+relu7:
+  inputs:
+    0:
+      min: -630.359130859375
+      max: 1025.96728515625
+      avg_min: -234.86144109528342
+      avg_max: 165.170597245815
+      mean: -28.37520237558376
+      std: 0
+      b: 0
+      shape: (1, 512, 2, 7, 7)
+      total_numel: 108329984
+  output:
+    min: 0.0
+    max: 1025.96728515625
+    avg_min: 0.0
+    avg_max: 165.170597245815
+    mean: 6.630863437240976
+    std: 0
+    b: 0
+    shape: (1, 512, 2, 7, 7)
+    total_numel: 108329984
+relu8:
+  inputs:
+    0:
+      min: -444.7986145019531
+      max: 618.3615112304688
+      avg_min: -119.51645719501946
+      avg_max: 100.98649569992025
+      mean: -31.77207444997413
+      std: 0
+      b: 0
+      shape: (1, 512, 2, 7, 7)
+      total_numel: 108329984
+  output:
+    min: 0.0
+    max: 618.3615112304688
+    avg_min: 0.0
+    avg_max: 100.98649569992025
+    mean: 0.8037311782640033
+    std: 0
+    b: 0
+    shape: (1, 512, 2, 7, 7)
+    total_numel: 108329984
+relu9:
+  inputs:
+    0:
+      min: -45.08852005004883
+      max: 53.80246353149414
+      avg_min: -12.463574540822833
+      avg_max: 12.437884527581634
+      mean: -0.5385474185737547
+      std: 0
+      b: 0
+      shape: (1, 4096)
+      total_numel: 8843264
+  output:
+    min: 0.0
+    max: 53.80246353149414
+    avg_min: 0.0
+    avg_max: 12.437884527581634
+    mean: 1.7312728423882329
+    std: 0
+    b: 0
+    shape: (1, 4096)
+    total_numel: 8843264
+relu10:
+  inputs:
+    0:
+      min: -15.8250150680542
+      max: 12.871698379516602
+      avg_min: -3.323736684708657
+      avg_max: 3.8797417176577125
+      mean: -0.43396957846459366
+      std: 0
+      b: 0
+      shape: (1, 4096)
+      total_numel: 8843264
+  output:
+    min: 0.0
+    max: 12.871698379516602
+    avg_min: 0.0
+    avg_max: 3.8797417176577125
+    mean: 0.3488707172064501
+    std: 0
+    b: 0
+    shape: (1, 4096)
+    total_numel: 8843264
+
+
+
+

@@ -1,0 +1,128 @@
+version: 1
+pruners:
+    conv1_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.20
+        weights: [conv1.weight]
+
+    conv2_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.50
+        weights: [conv2.weight]
+
+    conv3_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.85
+        weights: [conv3a.weight,conv3b.weight]
+
+    conv4_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.93
+        weights: [conv4a.weight,conv4b.weight]
+
+    conv5_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.95
+        weights: [conv5a.weight,conv5b.weight]
+
+    fc67_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.90
+        weights: [fc6.weight,fc7.weight]
+
+    fc8_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.70
+        weights: [fc8.weight]
+
+#######################################################
+quantizers:
+    linear_quantizer:
+        class: QuantAwareTrainRangeLinearQuantizer
+        bits_activations: 7
+        bits_weights: 8
+        bits_bias: 8
+        #bits_accum: 28
+        #bits_sca
+        mode: 'SYMMETRIC'
+        ema_decay: 0.999
+        per_channel_wts: True
+        overrides:
+            #conv1:
+                #bits_weights: null
+                #bits_activations: null
+                #bits_bias: null
+                #bits_accum: null
+            #relu1:
+                #bits_weights: null
+                #bits_activations: null
+                #bits_bias: null
+                #bits_accum: null
+            relu10:
+                bits_weights: null
+                bits_activations: null
+                bits_bias: null
+                #bits_accum: null
+            fc8:
+                bits_weights: null
+                bits_activations: null
+                bits_bias: null
+                #bits_accum: null
+                                             
+
+policies:
+    - pruner:
+          instance_name: conv1_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv2_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv3_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv4_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: conv5_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: fc67_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+    - pruner:
+          instance_name: fc8_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 1
+
+###################################################
+    - quantizer:
+          instance_name: linear_quantizer
+      starting_epoch: 0
+      ending_epoch: 300
+      frequency: 1
+
+
+
+
+
+

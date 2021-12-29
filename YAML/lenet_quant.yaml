@@ -1,0 +1,22 @@
+version: 1
+quantizers:
+    linear_quantizer:
+        class: DorefaQuantizer
+        bits_activations: 1
+        bits_weights: 1
+        bits_bias: 1
+        #bits_accum: 28
+        #bits_sca
+        #mode: 'ASYMMETRIC_SIGNED'
+        #ema_decay: 0.999
+        #per_channel_wts: True
+        #quantize_inputs: True
+        #num_bits_inputs: 8
+policies:
+###################################################
+    - quantizer:
+          instance_name: linear_quantizer
+      starting_epoch: 0
+      ending_epoch: 300
+      frequency: 1
+

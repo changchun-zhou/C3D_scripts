@@ -1,0 +1,162 @@
+version: 1
+pruners:
+    conv1_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.60
+        weights: [conv1.float_weight]
+
+    conv2_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.97
+        weights: [conv2.float_weight]
+
+    conv3a_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.95
+        weights: [conv3a.float_weight]
+
+    conv3b_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.97
+        weights: [conv3b.float_weight]
+
+    conv4a_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.95
+        weights: [conv4a.float_weight]
+
+    conv4b_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.97
+        weights: [conv4b.float_weight]
+
+    conv5a_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.80
+        weights: [conv5a.float_weight]
+
+    conv5b_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.85
+        weights: [conv5b.float_weight]
+
+    fc67_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.90
+        weights: [fc6.float_weight,fc7.float_weight]
+
+    fc8_pruner:
+        class: AutomatedGradualPruner
+        initial_sparsity: 0.05
+        final_sparsity: 0.85
+        weights: [fc8.float_weight]
+
+#######################################################
+quantizers:
+    linear_quantizer:
+        class: QuantAwareTrainRangeLinearQuantizer
+        bits_activations: 7
+        bits_weights: 8
+        bits_bias: 8
+        #bits_accum: 28
+        #bits_sca
+        mode: 'SYMMETRIC'
+        ema_decay: 0.999
+        per_channel_wts: True
+        quantize_inputs: True
+        num_bits_inputs: 7
+        overrides:
+            #conv1:
+                #bits_weights: null
+                #bits_activations: null
+                #bits_bias: null
+                #bits_accum: null
+            #relu1:
+                #bits_weights: null
+                #bits_activations: null
+                #bits_bias: null
+                #bits_accum: null
+            relu10:
+                bits_weights: null
+                bits_activations: null
+                bits_bias: null
+                #bits_accum: null
+            fc8:
+                bits_weights: null
+                bits_activations: null
+                bits_bias: null
+                #bits_accum: null
+                                             
+
+policies:
+    - pruner:
+          instance_name: conv1_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 2
+    - pruner:
+          instance_name: conv2_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 2
+    - pruner:
+          instance_name: conv3a_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 2
+    - pruner:
+          instance_name: conv3b_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 2
+    - pruner:
+          instance_name: conv4a_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 2
+    - pruner:
+          instance_name: conv4b_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 2
+    - pruner:
+          instance_name: conv5a_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 2
+    - pruner:
+          instance_name: conv5b_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 2
+    - pruner:
+          instance_name: fc67_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 2
+    - pruner:
+          instance_name: fc8_pruner
+      starting_epoch: 0
+      ending_epoch: 30
+      frequency: 2
+
+###################################################
+    - quantizer:
+          instance_name: linear_quantizer
+      starting_epoch: 0
+      ending_epoch: 500
+      frequency: 1
+
+
+
+
+
