@@ -138,12 +138,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 preds = torch.max(probs, 1)[1]
                 loss_weight = criterion(outputs, labels)
 
-                for net,param in model.named_parameters():
-                    if fnmatch(net, '*Threshold*'):
-                        threshold = param
-
-
-                loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(threshold) + conf.getfloat('fine', 'bias'))
+                loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(model.module.Threshold) + conf.getfloat('fine', 'bias'))
                 loss = (loss_weight + loss_th)
                 log_threshold_training = minibatch_id % (trainval_sizes[phase]//batch_size//2) ==0
                 if log_threshold_training:
@@ -163,7 +158,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                     optimizer.step()
                     # optimizer.zero_grad() 
                     if log_threshold_training:
-                        msglogger.info('\n\roriginal threshold:  value: {}'.format(threshold.cpu().detach().numpy()))
+                        msglogger.info('\n\roriginal model.module.Threshold:  value: {}'.format(model.module.Threshold.cpu().detach().numpy()))
 
                 running_loss += loss.item() * inputs.size(0)
                 if phase == 'train':
@@ -188,7 +183,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
             print("Execution time: " + str(stop_time - start_time) + "\n")
             save_list = []
             save_list.append(epoch_acc)
-            save_list.extend( (threshold.cpu().detach().numpy()).tolist() )
+            save_list.extend( (model.module.Threshold.cpu().detach().numpy()).tolist() )
             save_list.append(epoch_loss)
             save_list.append(loss_weight)
             save_list.append(loss_th)
@@ -271,7 +266,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
             print("Execution time: " + str(stop_time - start_time) + "\n")
             save_list = []
             save_list.append(epoch_acc)
-            save_list.extend( (threshold.cpu().detach().numpy()).tolist() )
+            save_list.extend( (model.module.Threshold.cpu().detach().numpy()).tolist() )
             save_list.append(epoch_loss)
             save_list.append(loss_weight)
             save_list.append(loss_th)
