@@ -174,9 +174,11 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
 
                 run_number += 1
                 minibatch_id = minibatch_id + 1
-                tdvd_nsamples = batch_size*minibatch_id + len(trainval_loaders[phase])*(epoch-resume_epoch)
-                to_csv.to_csv(save_dir + '/tdvd_range_'+ str(model.module.tdvd_range)+'_scale_factor_'+str(model.module.scale_factor)+'.csv', \
-                    tdvd_nsamples, get_tdvd_proportion(model, tdvd_nsamples))
+                if conf.getboolean('set', 'extract' ):
+                    assert(batch_size==1)
+                    tdvd_nsamples = minibatch_id
+                    to_csv.to_csv(save_dir + '/tdvd_range_'+ str(model.module.tdvd_range)+'_scale_factor_'+str(model.module.scale_factor)+'.csv', \
+                        tdvd_nsamples, get_tdvd_proportion(model, tdvd_nsamples))
             epoch_loss = running_loss / trainval_sizes[phase]
             epoch_acc = running_corrects.double() / trainval_sizes[phase]
 
