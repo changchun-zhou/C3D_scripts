@@ -3,6 +3,7 @@ import time
 import sys
 from fnmatch import fnmatch
 
+import torch.autograd as autograd
 sys.setrecursionlimit(1000000)
 sys.path.append("../pytorch-video-recognition-master/")
 sys.path.append("./scripts/Train/auto_threshold/")
@@ -34,6 +35,13 @@ from torch import optim
 from torch.autograd import Variable
 import to_csv
 from dataloaders.dataset import VideoDataset
+
+grads = {}
+ 
+def save_grad(name):
+    def hook(grad):
+        grads[name] = grad
+    return hook
 
 
 activation = {}
@@ -137,12 +145,12 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 # probs = outputs
                 preds = torch.max(probs, 1)[1]
                 loss_weight = criterion(outputs, labels)
-
-                loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(model.module.Threshold) + conf.getfloat('fine', 'bias'))
+                dropout_th = 20*torch.sigmoid(model.module.Threshold) + 1
+                loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(dropout_th) + conf.getfloat('fine', 'bias'))
                 loss = (loss_weight + loss_th)
-                log_threshold_training = minibatch_id % (trainval_sizes[phase]//batch_size//2) ==0
-                if log_threshold_training:
-                    msglogger.info("epoch: {}, loss_weight: {}, loss_th: {}, loss: {}".format(epoch, loss_weight, loss_th, loss))
+                # loss = loss_weight
+                log_threshold_training = minibatch_id % (trainval_sizes[phase]//batch_size//10) ==0
+
                 if phase == 'train':
                     if compression_scheduler:        
                         agg_loss = compression_scheduler.before_backward_pass(
@@ -150,15 +158,16 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                         loss=loss,return_loss_components=True,optimizer=optimizer)
                         loss = agg_loss.overall_loss
                 if phase == 'train':
-                    # optimizer.zero_grad() 
                     loss.backward()
                     torch.cuda.synchronize()
                     if compression_scheduler:
                         compression_scheduler.before_parameter_optimization(epoch,minibatch_id=minibatch_id,minibatches_per_epoch=trainval_sizes[phase]/batch_size,optimizer=optimizer)
                     optimizer.step()
-                    # optimizer.zero_grad() 
                     if log_threshold_training:
-                        msglogger.info('\n\roriginal model.module.Threshold:  value: {}'.format(model.module.Threshold.cpu().detach().numpy()))
+
+                        msglogger.info("\n\repoch: {}, loss_weight: {}, loss_th: {}, loss: {}".format(epoch, loss_weight, loss_th, loss))
+                        msglogger.info('\n\roriginal dropout_th: {}'.format(dropout_th.cpu().detach().numpy()))
+                        msglogger.info('\n\roriginal Threshold: {} \n\rmodel.module.Threshold.grad: {}'.format(model.module.Threshold.cpu().detach().numpy(), model.module.Threshold.grad.cpu().detach().numpy()))
 
                 running_loss += loss.item() * inputs.size(0)
                 if phase == 'train':
@@ -183,7 +192,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
             print("Execution time: " + str(stop_time - start_time) + "\n")
             save_list = []
             save_list.append(epoch_acc)
-            save_list.extend( (model.module.Threshold.cpu().detach().numpy()).tolist() )
+            save_list.extend( (dropout_th.cpu().detach().numpy()).tolist() )
             save_list.append(epoch_loss)
             save_list.append(loss_weight)
             save_list.append(loss_th)
@@ -266,7 +275,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
             print("Execution time: " + str(stop_time - start_time) + "\n")
             save_list = []
             save_list.append(epoch_acc)
-            save_list.extend( (model.module.Threshold.cpu().detach().numpy()).tolist() )
+            save_list.extend( (dropout_th.cpu().detach().numpy()).tolist() )
             save_list.append(epoch_loss)
             save_list.append(loss_weight)
             save_list.append(loss_th)
