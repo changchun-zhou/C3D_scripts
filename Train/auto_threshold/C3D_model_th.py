@@ -85,8 +85,8 @@ class C3D(nn.Module):
         tensor_in = tensor_in.permute(2, 0, 1, 3, 4)
         front, back = tensor_in[:-1], tensor_in[1:]
         diff = back - front
-
-        diff = torch.nn.Hardshrink(1.0)(diff/Threshold)*Threshold.item()
+        
+        diff = torch.nn.Hardshrink(1.0)(diff/Threshold)*(Threshold.item())
 
         back = front + diff
         tensor_out = torch.cat([tensor_in[0].unsqueeze(0), back], dim=0)
@@ -97,44 +97,45 @@ class C3D(nn.Module):
     def forward(self,x):
 
         scale = self.scale
-
+        threshold = 20*torch.sigmoid(self.Threshold) + 1
+        
         self.stat_tdvd_proportion(x, 0)
-        x = self.threshold(x,  self.Threshold[0], scale[0])
+        x = self.threshold(x,  threshold[0], scale[0])
 
         x = self.relu1(self.conv1(x))
         x = self.pool1(x)
         self.stat_tdvd_proportion(x, 1)
-        x = self.threshold(x,  self.Threshold[1], scale[1])
+        x = self.threshold(x,  threshold[1], scale[1])
 
         x = self.relu2(self.conv2(x))
         x = self.pool2(x)
 
         self.stat_tdvd_proportion(x, 2)
-        x = self.threshold(x, self.Threshold[2], scale[2])
+        x = self.threshold(x, threshold[2], scale[2])
 
         torch.cuda.empty_cache()
         x = self.relu3(self.conv3a(x))
         self.stat_tdvd_proportion(x, 3)
-        x = self.threshold(x,  self.Threshold[3], scale[3])
+        x = self.threshold(x,  threshold[3], scale[3])
 
         x = self.relu4(self.conv3b(x))
         x = self.pool3(x)
 
         self.stat_tdvd_proportion(x, 4)
-        x = self.threshold(x,  self.Threshold[4], scale[4])
+        x = self.threshold(x,  threshold[4], scale[4])
 
         x = self.relu5(self.conv4a(x))
 
         self.stat_tdvd_proportion(x, 5)
-        x = self.threshold(x, self.Threshold[5], scale[5])
+        x = self.threshold(x, threshold[5], scale[5])
         x = self.relu6(self.conv4b(x))
         x = self.pool4(x)
         self.stat_tdvd_proportion(x, 6)
-        x = self.threshold(x,  self.Threshold[6], scale[6])
+        x = self.threshold(x,  threshold[6], scale[6])
         x = self.relu7(self.conv5a(x))
 
         self.stat_tdvd_proportion(x, 7)
-        x = self.threshold(x, self.Threshold[7], scale[7])
+        x = self.threshold(x, threshold[7], scale[7])
         x = self.relu8(self.conv5b(x))
         x = self.pool5(x)
 
