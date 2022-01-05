@@ -97,7 +97,9 @@ class C3D(nn.Module):
     def forward(self,x):
 
         scale = self.scale
-        threshold = 20*torch.sigmoid(self.Threshold) + 1
+        sp2th_amp = torch.tensor([20, 15, 10, 8, 8, 8, 8, 8]).to(x.device)
+        sp2th_min = torch.tensor([2, 1, 1, 1, 1, 1, 1, 1]).to(x.device)
+        threshold = torch.sigmoid(self.Threshold) * sp2th_amp + sp2th_min
         
         self.stat_tdvd_proportion(x, 0)
         x = self.threshold(x,  threshold[0], scale[0])

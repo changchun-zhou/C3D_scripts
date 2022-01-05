@@ -145,8 +145,9 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 # probs = outputs
                 preds = torch.max(probs, 1)[1]
                 loss_weight = criterion(outputs, labels)
-                sp2th_weight = torch.tensor([2, 1, 1, 1, 1, 1, 1, 1]).to(device)
-                dropout_th = (20*torch.sigmoid(model.module.Threshold) + 1) * sp2th_weight
+                sp2th_amp = torch.tensor([20, 15, 10, 8, 8, 8, 8, 8]).to(device)
+                sp2th_min = torch.tensor([2, 1, 1, 1, 1, 1, 1, 1]).to(device)
+                dropout_th = torch.sigmoid(model.module.Threshold) * sp2th_amp + sp2th_min
                 loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(dropout_th) + conf.getfloat('fine', 'bias'))
                 loss = (loss_weight + loss_th)
                 # loss = loss_weight
@@ -165,7 +166,6 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                     if compression_scheduler:
                         compression_scheduler.before_parameter_optimization(epoch,minibatch_id=minibatch_id,minibatches_per_epoch=trainval_sizes[phase]/batch_size,optimizer=optimizer)
                     optimizer.step()
-                    dropout_th /= sp2th_weight
                     if log_threshold_training:
 
                         msglogger.info("\n\repoch: {}, loss_weight: {}, loss_th: {}, loss: {}".format(epoch, loss_weight, loss_th, loss))
