@@ -88,7 +88,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
     epoch_old = 0
     for epoch in range(resume_epoch, nEpochs):
 
-        Threshold_requires_grad = conf.getboolean('fine', 'requires_grad' ) and epoch > conf.getint('fine', 'epoch_start_th_learn')
+        Threshold_requires_grad = conf.getboolean('fine', 'requires_grad' ) and epoch >= conf.getint('fine', 'epoch_start_th_learn')
         model.module.Threshold.requires_grad = Threshold_requires_grad
 
         epoch_start_time=time.time()
@@ -145,10 +145,12 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 # probs = outputs
                 preds = torch.max(probs, 1)[1]
                 loss_weight = criterion(outputs, labels)
-                dropout_th = 20*torch.sigmoid(model.module.Threshold) + 1
+                sp2th_weight = torch.tensor([2, 1, 1, 1, 1, 1, 1, 1]).to(device)
+                dropout_th = (20*torch.sigmoid(model.module.Threshold) + 1) * sp2th_weight
                 loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(dropout_th) + conf.getfloat('fine', 'bias'))
                 loss = (loss_weight + loss_th)
                 # loss = loss_weight
+                dropout_th /= sp2th_weight
                 log_threshold_training = minibatch_id % (trainval_sizes[phase]//batch_size//10) ==0
 
                 if phase == 'train':
