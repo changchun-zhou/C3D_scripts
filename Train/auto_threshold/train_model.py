@@ -150,7 +150,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(dropout_th) + conf.getfloat('fine', 'bias'))
                 loss = (loss_weight + loss_th)
                 # loss = loss_weight
-                dropout_th /= sp2th_weight
+                
                 log_threshold_training = minibatch_id % (trainval_sizes[phase]//batch_size//10) ==0
 
                 if phase == 'train':
@@ -165,6 +165,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                     if compression_scheduler:
                         compression_scheduler.before_parameter_optimization(epoch,minibatch_id=minibatch_id,minibatches_per_epoch=trainval_sizes[phase]/batch_size,optimizer=optimizer)
                     optimizer.step()
+                    dropout_th /= sp2th_weight
                     if log_threshold_training:
 
                         msglogger.info("\n\repoch: {}, loss_weight: {}, loss_th: {}, loss: {}".format(epoch, loss_weight, loss_th, loss))
