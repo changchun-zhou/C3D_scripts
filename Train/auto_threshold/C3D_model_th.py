@@ -97,7 +97,7 @@ class C3D(nn.Module):
     def forward(self,x):
 
         scale = self.scale
-        sp2th_amp = torch.tensor([20, 15, 10, 8, 8, 8, 8, 8]).to(x.device)
+        sp2th_amp = torch.tensor([16, 14, 12, 6, 6, 6, 6, 6]).to(x.device)
         sp2th_min = torch.tensor([2, 1, 1, 1, 1, 1, 1, 1]).to(x.device)
         threshold = torch.sigmoid(self.Threshold) * sp2th_amp + sp2th_min
         
@@ -118,6 +118,10 @@ class C3D(nn.Module):
         torch.cuda.empty_cache()
         x = self.relu3(self.conv3a(x))
         self.stat_tdvd_proportion(x, 3)
+        print("original x_max: {}, x_min: {}, scale: {}".format(x.max(), x.min(), scale[3]))
+        print("  *scale x_max: {}, x_min: {}".format(x.max()*scale[3], x.min()*scale[3]))
+        print("original x[0][0][7][[7][0:8]]: {}".format(x[0][0][7][[7][0:8]]))
+        print("  *scale x[0][0][7][[7][0:8]]: {}".format(x[0][0][7][[7][0:8]]*scale[3]))
         x = self.threshold(x,  threshold[3], scale[3])
 
         x = self.relu4(self.conv3b(x))
