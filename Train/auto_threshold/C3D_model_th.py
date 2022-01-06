@@ -83,7 +83,7 @@ class C3D(nn.Module):
         Threshold = Threshold/scale
 
         tensor_in = tensor_in.permute(2, 0, 1, 3, 4)
-        front, back = tensor_in[:-1], tensor_in[1:]
+        front, back = tensor_in[0], tensor_in[1:]
         diff = back - front
         
         diff = torch.nn.Hardshrink(1.0)(diff/Threshold)*(Threshold.item())
@@ -118,10 +118,6 @@ class C3D(nn.Module):
         torch.cuda.empty_cache()
         x = self.relu3(self.conv3a(x))
         self.stat_tdvd_proportion(x, 3)
-        print("original x_max: {}, x_min: {}, scale: {}".format(x.max(), x.min(), scale[3]))
-        print("  *scale x_max: {}, x_min: {}".format(x.max()*scale[3], x.min()*scale[3]))
-        print("original x[0][0][7][[7][0:8]]: {}".format(x[0][0][7][[7][0:8]]))
-        print("  *scale x[0][0][7][[7][0:8]]: {}".format(x[0][0][7][[7][0:8]]*scale[3]))
         x = self.threshold(x,  threshold[3], scale[3])
 
         x = self.relu4(self.conv3b(x))
