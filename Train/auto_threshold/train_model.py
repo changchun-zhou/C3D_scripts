@@ -145,8 +145,8 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 # probs = outputs
                 preds = torch.max(probs, 1)[1]
                 loss_weight = criterion(outputs, labels)
-                sp2th_amp = torch.tensor([20, 15, 10, 8, 8, 8, 8, 8]).to(device)
-                sp2th_min = torch.tensor([2, 1, 1, 1, 1, 1, 1, 1]).to(device)
+                sp2th_amp = torch.tensor([10, 10, 10, 10, 10, 10, 10, 10]).to(device)
+                sp2th_min = torch.tensor([1, 1, 1, 1, 1, 1, 1, 1]).to(device)
                 dropout_th = torch.sigmoid(model.module.Threshold) * sp2th_amp + sp2th_min
                 loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(dropout_th) + conf.getfloat('fine', 'bias'))
                 loss = (loss_weight + loss_th)
@@ -170,7 +170,8 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
 
                         msglogger.info("\n\repoch: {}, loss_weight: {}, loss_th: {}, loss: {}".format(epoch, loss_weight, loss_th, loss))
                         msglogger.info('\n\roriginal dropout_th: {}'.format(dropout_th.cpu().detach().numpy()))
-                        msglogger.info('\n\roriginal Threshold: {} \n\rmodel.module.Threshold.grad: {}'.format(model.module.Threshold.cpu().detach().numpy(), model.module.Threshold.grad.cpu().detach().numpy()))
+                        if model.module.Threshold.requires_grad:
+                            msglogger.info('\n\roriginal Threshold: {} \n\rmodel.module.Threshold.grad: {}'.format(model.module.Threshold.cpu().detach().numpy(), model.module.Threshold.grad.cpu().detach().numpy()))
 
                 running_loss += loss.item() * inputs.size(0)
                 if phase == 'train':

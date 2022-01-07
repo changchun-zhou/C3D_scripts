@@ -2,9 +2,9 @@
 
 # VLSI-05
 
-batch_size = 64
-num_workers = 0
-device_ids = [0, 1]
+# batch_size = 64
+# num_workers = 0
+# device_ids = [0, 1]
 
 #VLSI-02
 
@@ -14,31 +14,29 @@ device_ids = [0, 1]
 
 # Autodl
 
-# batch_size = 32
-# # 512
-# device_ids = [0]
-# num_workers = 4
+batch_size = 128
+# 512
+device_ids = [0, 1, 2, 3, 4]
+num_workers = 20
 
 user = fuyz
-compress = scripts/YAML/prune_quant_sensitivity_module_resumed.yaml
-resumed_checkpoint_path = Extract/_epoch-65_best.pth.tar
-resumed_reset_th = true
+compress = scripts/YAML/quant_module.yaml
+resumed_checkpoint_path = Extract/branch_sigmoid_sp2th_baseframe_fixththentrain_fuyz_lambda0_001_bias0_1_threshold_lr_x50_threshold_lr_factor0_5_init_threshold_1_ 0_ -1_ -1_ -1_ -2_ -2_ -3__reset_th_False_compress_scripts_YAML_quant_module_yaml/run/run_0/models/_epoch-62_last.pth.tar
+resumed_reset_th = false
 resumed_reset_optim = true
 epoch_start_valtest = 30
 extract = false
 
 
 [fine]
-prefix = branch_sigmoid
+prefix = branch_sigmoid_sp2th_baseframe_fixththentrain
 requires_grad = true
-lambda = 0.5
+lambda = 0
 
-# init_threshold = [-10, -10, -10, -10, -10, -10, -10, -10]
-epoch_start_th_learn = 0
-# init_threshold = [30,30,30,30,30,30,30,30]
-# init_threshold = [0.1,0.2,1,2,10,10, 20,20]
-init_threshold = [0,0,0,0,0,0,0,0]
-threshold_lr_x = 100000
-threshold_lr_factor = 0.7
+# init_threshold = [-5, -5, -5, -5, -5, -5, -5, -5]
+init_threshold = [1, 0, -1, -1, -1, -2, -2, -3]
+epoch_start_th_learn = 15
+threshold_lr_x = 100
+threshold_lr_factor = 0.5
 bias = 0.1
 
