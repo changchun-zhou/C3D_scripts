@@ -48,7 +48,7 @@ conf.read(cfgpath,encoding="utf-8")
 
 conf_name = (\
     conf.get('fine','prefix') + '_' + conf.get('set', 'user') + '_lambda'+conf.get('fine','lambda')+'_bias'+conf.get('fine', 'bias')+ '_threshold_lr_x' + conf.get('fine', 'threshold_lr_x') + '_threshold_lr_factor' + \
-    conf.get('fine', 'threshold_lr_factor')+'_init_threshold' + str(conf.get('fine', 'init_threshold')) \
+    conf.get('fine', 'threshold_lr_factor')+'_init_threshold' + str(json.loads(conf.get('fine', 'init_threshold'))[0]) \
     + '_reset_th_' + str(conf.getboolean('set', 'resumed_reset_th' )) + '_compress_' + conf.get('set', 'compress').replace('/','_') \
         ).replace('.','_').replace('[','_').replace(']','_').replace(',','_')
 conf_compress = str(conf.get('set','compress'))
