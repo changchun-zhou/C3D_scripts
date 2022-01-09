@@ -152,7 +152,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 loss = (loss_weight + loss_th)
                 # loss = loss_weight
                 
-                log_threshold_training = minibatch_id % (trainval_sizes[phase]//batch_size//10) ==0
+                log_threshold_training = minibatch_id % (trainval_sizes[phase]//batch_size//10 + 1) ==0
 
                 if phase == 'train':
                     if compression_scheduler:        
