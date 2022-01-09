@@ -71,7 +71,7 @@ class C3D(nn.Module):
             self.__load_pretrained_weights()
 
     def diffbase(self, tensor_in):
-        return torch.cat([(tensor_in.permute(self.tdvd_permute_dim))[0].unsqueeze(0), (tensor_in.permute(self.tdvd_permute_dim))[1:] - (tensor_in.permute(self.tdvd_permute_dim))[:-1]], dim=0)
+        return torch.cat([(tensor_in.permute(self.tdvd_permute_dim))[0].unsqueeze(0), (tensor_in.permute(self.tdvd_permute_dim))[1:] - (tensor_in.permute(self.tdvd_permute_dim))[0]], dim=0)
     def reverseint(self, tensor):
         return tensor.round()
     def stat_tdvd_proportion(self,x, layer_idx):
