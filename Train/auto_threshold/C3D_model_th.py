@@ -79,7 +79,7 @@ class C3D(nn.Module):
             self.tdvd_proportion[ value + self.tdvd_range + (self.tdvd_range*2 + 1)* layer_idx] += (self.reverseint(self.diffbase(x)*self.scale[layer_idx]*self.scale_factor)==value).nonzero().size()[0]/x.numel()*100
 
     def threshold(self, tensor_in, Threshold= 1, scale = 1.0):
-
+        batch_num, c_num, f_num, h, w= tensor_in.size()
         Threshold = Threshold/scale
 
         tensor_in = tensor_in.permute(2, 0, 1, 3, 4)
@@ -88,8 +88,12 @@ class C3D(nn.Module):
         
         diff = torch.nn.Hardshrink(1.0)(diff/Threshold)*(Threshold.item())
 
-        back = front + diff
+        # back = front + diff
+        back[0] = tensor_in[0] + diff[0]
+        for f_i in range(1, f_num-1):
+            back[f_i] = back[f_i-1] + diff[f_i]
         tensor_out = torch.cat([tensor_in[0].unsqueeze(0), back], dim=0)
+
         tensor_out = tensor_out.permute(1, 2, 0, 3, 4)
 
         return tensor_out
