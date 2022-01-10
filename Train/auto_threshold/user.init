@@ -14,28 +14,28 @@
 
 # Autodl
 
-batch_size = 128
+batch_size = 280
 # 512
-device_ids = [0, 1, 2, 3, 4]
-num_workers = 20
+device_ids = [0, 1, 2, 3, 4, 5, 6]
+num_workers = 28
 
 user = fuyz
 compress = scripts/YAML/quant_module.yaml
-resumed_checkpoint_path = Extract/branch_sigmoid_sp2th_baseframe_fixththentrain_fuyz_lambda0_001_bias0_1_threshold_lr_x50_threshold_lr_factor0_5_init_threshold_1_ 0_ -1_ -1_ -1_ -2_ -2_ -3__reset_th_False_compress_scripts_YAML_quant_module_yaml/run/run_0/models/_epoch-62_last.pth.tar
+# resumed_checkpoint_path = Extract/branch_sigmoid_sp2th_baseframe_fixththentrain_fuyz_lambda0_001_bias0_1_threshold_lr_x50_threshold_lr_factor0_5_init_threshold_1_ 0_ -1_ -1_ -1_ -2_ -2_ -3__reset_th_False_compress_scripts_YAML_quant_module_yaml/run/run_0/models/_epoch-62_last.pth.tar
 resumed_reset_th = false
-resumed_reset_optim = true
+resumed_reset_optim = false
 epoch_start_valtest = 30
 extract = false
 
 
 [fine]
-prefix = branch_sigmoid_sp2th_baseframe_fixththentrain
+prefix = branch_sigmoid_sp2th_baseframe_fixththentrain_uniformth_baseline
 requires_grad = true
 lambda = 0
 
 # init_threshold = [-5, -5, -5, -5, -5, -5, -5, -5]
 init_threshold = [1, 0, -1, -1, -1, -2, -2, -3]
-epoch_start_th_learn = 15
+epoch_start_th_learn = 20
 threshold_lr_x = 100
 threshold_lr_factor = 0.5
 bias = 0.1
