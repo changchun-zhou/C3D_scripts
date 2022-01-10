@@ -148,7 +148,8 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 sp2th_amp = torch.tensor([20, 20, 20, 20, 20, 20, 20, 20]).to(device)
                 sp2th_min = torch.tensor([1, 1, 1, 1, 1, 1, 1, 1]).to(device)
                 dropout_th = torch.sigmoid(model.module.Threshold) * sp2th_amp + sp2th_min
-                loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(dropout_th) + conf.getfloat('fine', 'bias'))
+                # loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(dropout_th) + conf.getfloat('fine', 'bias'))
+                loss_th = conf.getfloat('fine', 'lambda')*(torch.norm(dropout_th) + conf.getfloat('fine', 'bias'))
                 loss = (loss_weight + loss_th)
                 # loss = loss_weight
                 
