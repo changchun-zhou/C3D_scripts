@@ -8,7 +8,8 @@ import timeit
 from torch.autograd import Variable
 import json
 import numpy as np
-
+def Inversedropout(dropout, amp, min):
+    return -np.log((amp/(dropout-min)) - 1)
 class C3D(nn.Module):
     """
     The C3D network.
@@ -18,8 +19,10 @@ class C3D(nn.Module):
         super(C3D, self).__init__()
         self.scale = [1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]
 
-        self.Threshold = nn.Parameter(torch.Tensor(json.loads(conf.get('fine', 'init_threshold'))), requires_grad = conf.getboolean('fine', 'requires_grad' ) )
+        init_threshold = Inversedropout( np.array(json.loads(conf.get('fine', 'sp2th_init'))), np.array(json.loads(conf.get('fine', 'sp2th_amp'))), np.array(json.loads(conf.get('fine', 'sp2th_min'))))
 
+        self.Threshold = nn.Parameter(torch.Tensor(init_threshold), requires_grad = conf.getboolean('fine', 'requires_grad' ) )
+        self.conf = conf
         self.register_parameter('Threshold',self.Threshold)
         self.tdvd_range = 10
         self.tdvd_proportion = ( np.zeros([(self.tdvd_range*2 + 1)*8]) ).tolist()
@@ -71,7 +74,7 @@ class C3D(nn.Module):
             self.__load_pretrained_weights()
 
     def diffbase(self, tensor_in):
-        return torch.cat([(tensor_in.permute(self.tdvd_permute_dim))[0].unsqueeze(0), (tensor_in.permute(self.tdvd_permute_dim))[1:] - (tensor_in.permute(self.tdvd_permute_dim))[0]], dim=0)
+        return torch.cat([(tensor_in.permute(self.tdvd_permute_dim))[0].unsqueeze(0), (tensor_in.permute(self.tdvd_permute_dim))[1:] - (tensor_in.permute(self.tdvd_permute_dim))[:-1]], dim=0)
     def reverseint(self, tensor):
         return tensor.round()
     def stat_tdvd_proportion(self,x, layer_idx):
@@ -101,8 +104,8 @@ class C3D(nn.Module):
     def forward(self,x):
 
         scale = self.scale
-        sp2th_amp = torch.tensor([20, 20, 20, 20, 20, 20, 20, 20]).to(x.device)
-        sp2th_min = torch.tensor([1, 1, 1, 1, 1, 1, 1, 1]).to(x.device)
+        sp2th_amp = torch.tensor(json.loads(self.conf.get('fine', 'sp2th_amp'))).to(x.device)
+        sp2th_min = torch.tensor(json.loads(self.conf.get('fine', 'sp2th_min'))).to(x.device)
         threshold = torch.sigmoid(self.Threshold) * sp2th_amp + sp2th_min
         
         self.stat_tdvd_proportion(x, 0)

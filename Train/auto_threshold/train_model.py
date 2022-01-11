@@ -2,7 +2,7 @@ import numpy as np
 import time    
 import sys
 from fnmatch import fnmatch
-
+import json
 import torch.autograd as autograd
 sys.setrecursionlimit(1000000)
 sys.path.append("../pytorch-video-recognition-master/")
@@ -145,8 +145,8 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 # probs = outputs
                 preds = torch.max(probs, 1)[1]
                 loss_weight = criterion(outputs, labels)
-                sp2th_amp = torch.tensor([20, 20, 20, 20, 20, 20, 20, 20]).to(device)
-                sp2th_min = torch.tensor([1, 1, 1, 1, 1, 1, 1, 1]).to(device)
+                sp2th_amp = torch.tensor(json.loads(conf.get('fine', 'sp2th_amp'))).to(device)
+                sp2th_min = torch.tensor(json.loads(conf.get('fine', 'sp2th_min'))).to(device)
                 dropout_th = torch.sigmoid(model.module.Threshold) * sp2th_amp + sp2th_min
                 loss_th = conf.getfloat('fine', 'lambda')/(torch.norm(dropout_th) + conf.getfloat('fine', 'bias'))
                 loss = (loss_weight + loss_th)
