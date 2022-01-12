@@ -151,6 +151,24 @@ class C3D(nn.Module):
     #     tensor_out = tensor_out.permute(1, 2, 0, 3, 4)
 
     #     return tensor_out
+    # def threshold(self, tensor_in, threshold): 
+
+    #     tensor_in = tensor_in.permute(2, 0, 1, 3, 4) 
+    #     front, back = tensor_in[:-1], tensor_in[1:]
+    #     diff = back - front
+
+    #     mask = torch.abs(diff) > threshold
+    #     diff *= mask
+
+    #     back = front + diff
+    #     tensor_out = torch.cat([tensor_in[0].unsqueeze(0), back], dim=0)
+    #     tensor_out = tensor_out.permute(1, 2, 0, 3, 4)
+
+    #     return tensor_out
+
+
+
+
     def forward(self,x):
         Layer_Depth = 4
         
