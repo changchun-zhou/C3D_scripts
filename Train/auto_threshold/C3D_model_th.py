@@ -86,15 +86,19 @@ class C3D(nn.Module):
         Threshold = Threshold/scale
 
         tensor_in = tensor_in.permute(2, 0, 1, 3, 4)
-        front, back = tensor_in[: -1], tensor_in[1:]
+        front, back = tensor_in[0], tensor_in[1:]
         diff = back - front
-        
-        diff = torch.nn.Hardshrink(1.0)(diff/Threshold)*(Threshold.item())
 
-        # back = front + diff
-        back[0] = tensor_in[0] + diff[0]
-        for f_i in range(1, f_num-1):
-            back[f_i] = back[f_i-1] + diff[f_i]
+        # diff = torch.max(diff, torch.Tensor([1e-8]).to(diff.device))
+        # diff = Threshold/(( torch.nn.Tanh()(1/diff*Threshold) ))
+
+        diff = torch.nn.Tanhshrink()(diff/Threshold)*Threshold
+        # Tanh
+
+        back = front + diff
+        # back[0] = tensor_in[0] + diff[0]
+        # for f_i in range(1, f_num-1):
+        #     back[f_i] = back[f_i-1] + diff[f_i]
         tensor_out = torch.cat([tensor_in[0].unsqueeze(0), back], dim=0)
 
         tensor_out = tensor_out.permute(1, 2, 0, 3, 4)
