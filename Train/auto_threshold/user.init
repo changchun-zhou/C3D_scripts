@@ -14,27 +14,30 @@
 
 # Autodl
 
-batch_size = 280
+batch_size = 1
 # 512
-device_ids = [0, 1, 2, 3, 4, 5, 6]
-num_workers = 28
+device_ids = [0]
+num_workers = 4
 
 user = fuyz
 compress = scripts/YAML/quant_module.yaml
-# resumed_checkpoint_path = Extract/branch_sigmoid_sp2th_baseframe_fixththentrain_fuyz_lambda0_001_bias0_1_threshold_lr_x50_threshold_lr_factor0_5_init_threshold_1_ 0_ -1_ -1_ -1_ -2_ -2_ -3__reset_th_False_compress_scripts_YAML_quant_module_yaml/run/run_0/models/_epoch-62_last.pth.tar
+resumed_checkpoint_path = Extract/branch_consecutive_frame_serialrestore_trainth3_fuyz_lambda0_bias0_1_threshold_lr_x100_threshold_lr_factor0_5_sp2th_init3_reset_th_False_compress_scripts_YAML_quant_module_yaml/run/run_0/models/_epoch-14_best.pth.tar
 resumed_reset_th = false
-resumed_reset_optim = false
+resumed_reset_optim = true
 epoch_start_valtest = 30
-extract = false
-
+extract = true
+extract_origin = true
 
 [fine]
-prefix = branch_sigmoid_sp2th_baseframe_fixththentrain_uniformth_baseline
+prefix = branch_consecutive_frame_serialrestore_extract
 requires_grad = true
-lambda = 0
+lambda = 0.1
 
-# init_threshold = [-5, -5, -5, -5, -5, -5, -5, -5]
-init_threshold = [1, 0, -1, -1, -1, -2, -2, -3]
+sp2th_amp = [20, 20, 20, 20, 20, 20, 20, 20]
+# sp2th_min = [1, 1, 1, 1, 1, 1, 1, 1]
+sp2th_min = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+sp2th_init = [6, 6, 6, 6, 6, 6, 6, 6]
+
 epoch_start_th_learn = 20
 threshold_lr_x = 100
 threshold_lr_factor = 0.5

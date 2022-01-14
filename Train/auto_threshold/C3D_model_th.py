@@ -79,7 +79,10 @@ class C3D(nn.Module):
         return tensor.round()
     def stat_tdvd_proportion(self,x, layer_idx):
         for value in range(-self.tdvd_range, self.tdvd_range + 1):
-            self.tdvd_proportion[ value + self.tdvd_range + (self.tdvd_range*2 + 1)* layer_idx] += (self.reverseint(self.diffbase(x)*self.scale[layer_idx]*self.scale_factor)==value).nonzero().size()[0]/x.numel()*100
+            if self.conf.getboolean('set', 'extract_origin'):
+                self.tdvd_proportion[ value + self.tdvd_range + (self.tdvd_range*2 + 1)* layer_idx] += (self.reverseint(x*self.scale[layer_idx]*self.scale_factor)==value).nonzero().size()[0]/x.numel()*100
+            else:
+                self.tdvd_proportion[ value + self.tdvd_range + (self.tdvd_range*2 + 1)* layer_idx] += (self.reverseint(self.diffbase(x)*self.scale[layer_idx]*self.scale_factor)==value).nonzero().size()[0]/x.numel()*100
 
     def threshold(self, tensor_in, Threshold= 1, scale = 1.0):
         batch_num, c_num, f_num, h, w= tensor_in.size()

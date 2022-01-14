@@ -185,7 +185,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                 if conf.getboolean('set', 'extract' ):
                     assert(batch_size==1)
                     tdvd_nsamples = minibatch_id
-                    to_csv.to_csv(save_dir + '/tdvd_range_'+ str(model.module.tdvd_range)+'_scale_factor_'+str(model.module.scale_factor)+'.csv', \
+                    to_csv.to_csv(save_dir + '/tdvd_range_'+ str(model.module.tdvd_range)+'_scale_factor_'+str(model.module.scale_factor)+'_extract_origin_'+str(conf.getboolean('set', 'extract_origin'))+'.csv', \
                         tdvd_nsamples, get_tdvd_proportion(model, tdvd_nsamples))
             epoch_loss = running_loss / trainval_sizes[phase]
             epoch_acc = running_corrects.double() / trainval_sizes[phase]
