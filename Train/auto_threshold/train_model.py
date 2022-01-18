@@ -60,6 +60,8 @@ def remove_file(filename):
 def get_tdvd_proportion(model, nsamples):
     return [x/nsamples for x in model.module.tdvd_proportion]
 
+
+
 def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, lr,
                 nEpochs,resume_epoch,batch_size, save_epoch, useTest, test_interval,
                 device, compression_scheduler,msglogger, tflogger,pylogger,modelName,postquant_pth):
@@ -86,6 +88,7 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
 
     epoch_acc_old = 0
     epoch_old = 0
+
     for epoch in range(resume_epoch, nEpochs):
 
         Threshold_requires_grad = conf.getboolean('fine', 'requires_grad' ) and epoch >= conf.getint('fine', 'epoch_start_th_learn')
@@ -109,6 +112,40 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
             else:
                 model.eval()
 
+            def test_func(model):
+                model.eval()
+                start_time = timeit.default_timer()
+
+                running_loss = 0.0
+                running_corrects = 0.0
+
+                for inputs, labels in tqdm(test_dataloader):
+                    inputs = inputs.to(device)
+                    labels = labels.to(device)
+
+                    with torch.no_grad():
+                        outputs = model(inputs)
+                    probs = nn.Softmax(dim=1)(outputs)
+                    preds = torch.max(probs, 1)[1]
+                    loss = criterion(outputs, labels)
+
+                    running_loss += loss.item() * inputs.size(0)
+                    running_corrects += torch.sum(preds == labels.data)
+
+                epoch_loss = running_loss / test_size
+                epoch_acc = running_corrects.double() / test_size
+                print("############  test_func loss:", epoch_loss, "acc :", epoch_acc)
+                return epoch_acc, epoch_acc, epoch_loss
+            sparsities = np.arange(0,1,0.05)
+            # test_func(model =model,test_dataloader= test_dataloader, criterion=criterion, test_size=test_size, device=device )
+            which_params = [param_name for param_name, _ in model.named_parameters()]
+            sensitivity = distiller.perform_sensitivity_analysis(model = model,
+                                                                 net_params=which_params,
+                                                                 sparsities=sparsities,
+                                                                 test_func=test_func,
+                                                                 group='element')
+            print("sensitivity: {}".format(sensitivity))
+            #####
             for inputs, labels in tqdm(trainval_loaders[phase]):
                 scale_threshold = []
                 scale_threshold.append(model.module.inputs_quant.scale.item())
