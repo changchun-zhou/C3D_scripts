@@ -5,8 +5,7 @@ import os
 import random
 import math
 from gen_coe import cls_gen_coe
-# import heapq
-# from Function_self import Function_self
+
 def WRITE_BACK( File, NumCol, NumChar, data, cnt_wr, temp ):
     if NumChar == 4:
         data = hex(data & 0xffff) # signed
@@ -39,25 +38,32 @@ def tensor_to_file_act(output_dir, tensor,theshold):
     fp_data_wr = open(os.path.join(output_dir)+'/'+'dataact_L00'+'.txt','w') # activation for delta
     fp_flag_wr = open(os.path.join(output_dir)+'/'+'flagact_L00'+'.txt','w') 
     fp_info = open(os.path.join(output_dir)+'/'+'config'+'.txt','a') 
-    Num_patch =  (math.ceil(shape[3]/16.0))* (math.ceil(shape[4]/16.0))
+    # Num_patch =  (math.ceil(shape[3]/16.0))* (math.ceil(shape[4]/16.0))
+    Num_patch_H = math.ceil(shape[3]/16.0)
+    Num_patch_W = math.ceil(shape[3]/16.0)
+    Num_patch = Num_patch_H * Num_patch_W
     Num_frame = shape[2]
     Num_block = math.ceil(shape[1]/32)
-    for patch in range(Num_patch):
-        for frame in range(Num_frame):
-        # for frame in range(7):
-            for block in range(Num_block):
-                for H in range(16):
-                    for W in range(16):
-                        for chn in range(32):
-                            tmp = round(random.gauss(0.108, 0.430)) # pool1
-                            if abs(tmp) >= theshold :
-                                cnt_element += 1
-                                flag = 1
-                                cnt_wr_data, temp_data= WRITE_BACK(fp_data_wr, 32, 2, tmp, cnt_wr_data, temp_data)
-                            else:
-                                flag = 0
-                            cnt_wr_flag, temp_flag = WRITE_BACK(fp_flag_wr, 128,1, flag, cnt_wr_flag, temp_flag)
-                            cnt_element_flag += 1
+    if shape[1] < 32: # padding channels
+        tensor = torch.cat([tensor, torch.zeros(shape[0], 32-shape[1], shape[2], shape[3], shape[4])], dim=1)
+        array_shape = (tensor.cpu()).numpy()
+    # for patch in range(Num_patch):
+    for patch_h in range(Num_patch_H):
+        for patch_w in range(Num_patch_W):
+            for frame in range(Num_frame):
+                for block in range(Num_block):
+                    for H in range(16):
+                        for W in range(16):
+                            for chn in range(32):
+                                tmp = int(array_shape[0][chn + 32*block][frame][H + 16*patch_h][W + 16*patch_w])
+                                if abs(tmp) >= theshold :
+                                    cnt_element += 1
+                                    flag = 1
+                                    cnt_wr_data, temp_data= WRITE_BACK(fp_data_wr, 32, 2, tmp, cnt_wr_data, temp_data)
+                                else:
+                                    flag = 0
+                                cnt_wr_flag, temp_flag = WRITE_BACK(fp_flag_wr, 128,1, flag, cnt_wr_flag, temp_flag)
+                                cnt_element_flag += 1
     fp_info.write("\nActivation Sparsity"+str(1 - float(cnt_element)/(Num_patch*Num_frame*Num_block*16*16*32)))
     fp_info.write("\nconfig CFGCCU_num_patch = "+str(Num_patch -1))
     fp_info.write("\nconfig CFGCCU_num_frame = "+str(Num_frame -1))
@@ -95,6 +101,7 @@ def tensor_to_file_wei(output_dir,tensor):
     fp_flag_wr = open(os.path.join(output_dir)+'/'+'flagwei_L00'+'.txt','w')
     fp_addrwei_wr = open(os.path.join(output_dir)+'/'+'addrwei_L00'+'.txt','w')
     fp_info = open(os.path.join(output_dir)+'/'+'config'+'.txt','a') 
+
     for patch in range(int(shape[0]/16.0)): # ftrgrp
         addr_element =0
         # cnt_wr_addrwei, temp_addrwei= WRITE_BACK(fp_addrwei_wr, 32, 4, addr_element, cnt_wr_addrwei, temp_addrwei)
@@ -107,7 +114,7 @@ def tensor_to_file_wei(output_dir,tensor):
                         for chn in range(shape[1]):
                             # Sort_index = weight + 16*patch
                             # Sort_index = CntWeiNotZero_FtrGrp_Sort_index[weight + 16*patch]
-                            tmp = round(random.normalvariate(-0.137, 0.430)) # conv2
+                            tmp = int(array_shape[weight + 16*patch][chn][frame][H][W])
                             if tmp != 0 :
                                 cnt_element += 1
                                 cnt_sparsity += 1
@@ -144,35 +151,55 @@ def tensor_to_file_wei(output_dir,tensor):
 
 random.seed(000)
 dict = {
-        'norm_conv1'     :{'activation':torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)}, # 0.3818
-        'norm_conv2'     :{'activation':torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'norm_conv3'     :{'activation':torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'norm_conv4'     :{'activation':torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'norm_conv5'     :{'activation':torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'norm_conv6'     :{'activation':torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'norm_conv7'     :{'activation':torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'norm_conv8'     :{'activation':torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'hlb_conv1'      :{'activation':torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)}, # 0.3818
-        'hlb_conv2'      :{'activation':torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'hlb_conv3'      :{'activation':torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'hlb_conv4'      :{'activation':torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'hlb_conv5'      :{'activation':torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'hlb_conv6'      :{'activation':torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'hlb_conv7'      :{'activation':torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'hlb_conv8'      :{'activation':torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'baseline_conv1' :{'activation':torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)}, # 0.3818
-        'baseline_conv2' :{'activation':torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'baseline_conv3' :{'activation':torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'baseline_conv4' :{'activation':torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'baseline_conv5' :{'activation':torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'baseline_conv6' :{'activation':torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'baseline_conv7' :{'activation':torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)},
-        'baseline_conv8' :{'activation':torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430), 'weight': torch.normal(-0.137,  torch.ones(32, 64, 3, 3, 3)*0.430)}
-        
+        'norm_conv1'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(64 ,  3, 3, 3, 3)*0.430) )}, # 0.3818
+        'norm_conv2'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128, 64, 3, 3, 3)*0.430) )},
+        'norm_conv3'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,128, 3, 3, 3)*0.430) )},
+        'norm_conv4'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,256, 3, 3, 3)*0.430) )},
+        'norm_conv5'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,256, 3, 3, 3)*0.430) )},
+        'norm_conv6'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        'norm_conv7'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        'norm_conv8'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        'hlb_conv1'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(64 ,  3, 3, 3, 3)*0.430) )}, # 0.3818
+        'hlb_conv2'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128, 64, 3, 3, 3)*0.430) )},
+        'hlb_conv3'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,128, 3, 3, 3)*0.430) )},
+        'hlb_conv4'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,256, 3, 3, 3)*0.430) )},
+        'hlb_conv5'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,256, 3, 3, 3)*0.430) )},
+        'hlb_conv6'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        'hlb_conv7'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        'hlb_conv8'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        'baseline_conv1' :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(64 ,  3, 3, 3, 3)*0.430) )}, # 0.3818
+        'baseline_conv2' :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128, 64, 3, 3, 3)*0.430) )},
+        'baseline_conv3' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,128, 3, 3, 3)*0.430) )},
+        'baseline_conv4' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,256, 3, 3, 3)*0.430) )},
+        'baseline_conv5' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,256, 3, 3, 3)*0.430) )},
+        'baseline_conv6' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        'baseline_conv7' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        'baseline_conv8' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )}
         }
-
+# dict = {
+#         'norm_conv1'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   4, 112,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones( 32,   4, 3, 3, 3)*0.430) )}, # 0.3818
+#         'norm_conv2'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  32,  56,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones( 64,  32, 3, 3, 3)*0.430) )},
+#         'norm_conv3'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64,  28,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128,  64, 3, 3, 3)*0.430) )},
+#         'norm_conv4'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  14,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256, 128, 3, 3, 3)*0.430) )},
+#         'norm_conv5'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,   7,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512, 256, 3, 3, 3)*0.430) )},
+#         'norm_conv6'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,   7,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512, 512, 3, 3, 3)*0.430) )},
+#         'norm_conv7'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  14,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512, 512, 3, 3, 3)*0.430) )},
+#         'norm_conv8'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  28,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256, 256, 3, 3, 3)*0.430) )},
+#         'norm_conv9'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  56,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256, 256, 3, 3, 3)*0.430) )},
+#         'norm_conv10'    :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 112,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones( 32,  64, 3, 3, 3)*0.430) )},
+#         'hlb_conv1'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   4, 112,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones( 32,   4, 3, 3, 3)*0.430) )}, # 0.3818
+#         'hlb_conv2'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  32,  56,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones( 64,  32, 3, 3, 3)*0.430) )},
+#         'hlb_conv3'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64,  28,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128,  64, 3, 3, 3)*0.430) )},
+#         'hlb_conv4'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  14,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256, 128, 3, 3, 3)*0.430) )},
+#         'hlb_conv5'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,   7,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512, 256, 3, 3, 3)*0.430) )},
+#         'hlb_conv6'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,   7,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512, 512, 3, 3, 3)*0.430) )},
+#         'hlb_conv7'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  14,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512, 512, 3, 3, 3)*0.430) )},
+#         'hlb_conv8'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  28,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256, 256, 3, 3, 3)*0.430) )},
+#         'hlb_conv9'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  56,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256, 256, 3, 3, 3)*0.430) )},
+#         'hlb_conv10'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 112,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones( 32,  64, 3, 3, 3)*0.430) )},
+#         }
 for case, params in dict.items():
-    discrete_dir = os.path.join('output', case, 'discrete')
+    discrete_dir = os.path.join('output', 'c3d', case, 'discrete')
     if not os.path.exists(discrete_dir):
         os.makedirs(discrete_dir)
     
@@ -181,7 +208,7 @@ for case, params in dict.items():
 
     # tensor = torch.ones([32, 64, 3, 3, 3 ])
     numblk_weiaddr, numblk_flgwei, numblk_wei = tensor_to_file_wei(output_dir=discrete_dir, tensor=params['weight'])
-    ROM_dir = os.path.join('output', case, 'ROM')
+    ROM_dir = os.path.join('output', 'c3d', case, 'ROM')
     if not os.path.exists(ROM_dir):
         os.makedirs(ROM_dir)
     cls_gen_coe(discrete_dir, ROM_dir).func_gen_coe(numblk_weiaddr, numblk_flgwei, numblk_wei, numblk_flgact, numblk_act)
