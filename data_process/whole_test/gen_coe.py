@@ -35,9 +35,9 @@ class cls_gen_coe():
                 [4,CFGGB_num_alloc_flgact],
                 [4,CFGGB_num_alloc_act   ],
 
-                [4,CFGGB_num_total_flgwei],
-                [4,CFGGB_num_total_flgact],
-                [4,CFGGB_num_total_act   ],
+                [5,CFGGB_num_total_flgwei],
+                [5,CFGGB_num_total_flgact],
+                [6,CFGGB_num_total_act   ],
 
                 [12,CFGGB_num_loop_wei],
                 [8, CFGGB_num_loop_act],
@@ -107,7 +107,7 @@ class cls_gen_coe():
     def dec2width_bin (self, width, dec):
         bin_str = bin(dec).lstrip('0b').zfill(width)
 
-        return bin_str
+        return bin_str[-width:]
 
 
 if __name__ == "__main__":
