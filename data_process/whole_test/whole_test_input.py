@@ -24,7 +24,7 @@ def WRITE_BACK( File, NumCol, NumChar, data, cnt_wr, temp ):
         temp = ''
     return cnt_wr, temp
 
-def tensor_to_file_act(output_dir, tensor,theshold):
+def tensor_to_file_act(output_dir, tensor,threshold):
 
     array_shape = (tensor.cpu()).numpy()
     shape = array_shape.shape
@@ -44,10 +44,10 @@ def tensor_to_file_act(output_dir, tensor,theshold):
     Num_patch = Num_patch_H * Num_patch_W
     Num_frame = shape[2]
     Num_block = math.ceil(shape[1]/32)
-    if shape[1] < 32: # padding channels
-        tensor = torch.cat([tensor, torch.zeros(shape[0], 32-shape[1], shape[2], shape[3], shape[4])], dim=1)
-        array_shape = (tensor.cpu()).numpy()
-    # for patch in range(Num_patch):
+    tensor = torch.nn.functional.pad(tensor, (0, 16*math.ceil(shape[4]/16)-shape[4], 0, 16*math.ceil(shape[3]/16) - shape[3], \
+        0, math.ceil(shape[2]/1)-shape[2], 0, 32*math.ceil(shape[1]/32)-shape[1] ) )
+    array_shape = (tensor.cpu()).detach().numpy()
+
     for patch_h in range(Num_patch_H):
         for patch_w in range(Num_patch_W):
             for frame in range(Num_frame):
@@ -56,7 +56,7 @@ def tensor_to_file_act(output_dir, tensor,theshold):
                         for W in range(16):
                             for chn in range(32):
                                 tmp = int(array_shape[0][chn + 32*block][frame][H + 16*patch_h][W + 16*patch_w])
-                                if abs(tmp) >= theshold :
+                                if abs(tmp) >= threshold :
                                     cnt_element += 1
                                     flag = 1
                                     cnt_wr_data, temp_data= WRITE_BACK(fp_data_wr, 32, 2, tmp, cnt_wr_data, temp_data)
@@ -81,9 +81,9 @@ def tensor_to_file_act(output_dir, tensor,theshold):
         cnt_wr_flag, temp_flag = WRITE_BACK(fp_flag_wr, 128,1, flag, cnt_wr_flag, temp_flag)
     return numblk_flaact, numblk_act
 
-def tensor_to_file_wei(output_dir,tensor):
+def tensor_to_file_wei(output_dir,tensor, threshold):
 
-    array_shape = (tensor.cpu()).numpy()
+    array_shape = (tensor.cpu()).detach().numpy()
     shape = array_shape.shape
 
     cnt_element = 0
@@ -104,18 +104,14 @@ def tensor_to_file_wei(output_dir,tensor):
 
     for patch in range(int(shape[0]/16.0)): # ftrgrp
         addr_element =0
-        # cnt_wr_addrwei, temp_addrwei= WRITE_BACK(fp_addrwei_wr, 32, 4, addr_element, cnt_wr_addrwei, temp_addrwei)
         for weight in range(16): # [73, 67, 17, 4, 83, 25, 52, 126, 37, 41, 68, 127, 123, 49, 49, 36, 120, 13, 44, 90, 30, 42, 42, 42, 63, 5, 5, 28, 28, 21, 21, 114, 54, 54, 75, 23, 19, 16, 110, 87, 91, 12, 70, 53, 58, 69, 31, 31, 31, 8, 38, 34, 85, 92, 105, 100, 32, 39, 39, 39, 80, 20, 111, 97, 15, 35, 64, 27, 46, 26, 26, 2, 14, 43, 43, 71, 0, 3, 3, 57, 33, 106, 106, 24, 81, 82, 78, 47, 59, 103, 65, 65, 10, 10, 10, 74, 56, 56, 56, 60, 122, 101, 1, 94, 6, 66, 93, 9, 48, 29, 7, 22, 115, 112, 109, 108, 96, 40, 119, 51, 124, 62, 55, 11, 11, 18, 77, 61]
             for frame in range(shape[2]):
-            # for block in range(int(shape[1]/32)):
                 for H in range(shape[3]):
                     for W in range(shape[4]):
                         cnt_wr_addrwei, temp_addrwei= WRITE_BACK(fp_addrwei_wr, 32, 4, int(addr_element/16), cnt_wr_addrwei, temp_addrwei)
                         for chn in range(shape[1]):
-                            # Sort_index = weight + 16*patch
-                            # Sort_index = CntWeiNotZero_FtrGrp_Sort_index[weight + 16*patch]
                             tmp = int(array_shape[weight + 16*patch][chn][frame][H][W])
-                            if tmp != 0 :
+                            if abs(tmp) >= threshold :
                                 cnt_element += 1
                                 cnt_sparsity += 1
                                 addr_element += 1
@@ -149,33 +145,33 @@ def tensor_to_file_wei(output_dir,tensor):
     fp_info.write('\nconfig CFGGB_num_loop_act = '+ str(int(shape[0]/16.0)))
     return numblk_weiaddr, numblk_flgwei, numblk_wei
 
-random.seed(000)
-dict = {
-        'norm_conv1'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(64 ,  3, 3, 3, 3)*0.430) )}, # 0.3818
-        'norm_conv2'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128, 64, 3, 3, 3)*0.430) )},
-        'norm_conv3'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,128, 3, 3, 3)*0.430) )},
-        'norm_conv4'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,256, 3, 3, 3)*0.430) )},
-        'norm_conv5'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,256, 3, 3, 3)*0.430) )},
-        'norm_conv6'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
-        'norm_conv7'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
-        'norm_conv8'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
-        'hlb_conv1'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(64 ,  3, 3, 3, 3)*0.430) )}, # 0.3818
-        'hlb_conv2'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128, 64, 3, 3, 3)*0.430) )},
-        'hlb_conv3'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,128, 3, 3, 3)*0.430) )},
-        'hlb_conv4'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,256, 3, 3, 3)*0.430) )},
-        'hlb_conv5'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,256, 3, 3, 3)*0.430) )},
-        'hlb_conv6'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
-        'hlb_conv7'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
-        'hlb_conv8'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
-        'baseline_conv1' :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(64 ,  3, 3, 3, 3)*0.430) )}, # 0.3818
-        'baseline_conv2' :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128, 64, 3, 3, 3)*0.430) )},
-        'baseline_conv3' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,128, 3, 3, 3)*0.430) )},
-        'baseline_conv4' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,256, 3, 3, 3)*0.430) )},
-        'baseline_conv5' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,256, 3, 3, 3)*0.430) )},
-        'baseline_conv6' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
-        'baseline_conv7' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
-        'baseline_conv8' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )}
-        }
+# random.seed(000)
+# dict = {
+#         'norm_conv1'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(64 ,  3, 3, 3, 3)*0.430) )}, # 0.3818
+#         'norm_conv2'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128, 64, 3, 3, 3)*0.430) )},
+        # 'norm_conv3'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,128, 3, 3, 3)*0.430) )},
+        # 'norm_conv4'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,256, 3, 3, 3)*0.430) )},
+        # 'norm_conv5'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,256, 3, 3, 3)*0.430) )},
+        # 'norm_conv6'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        # 'norm_conv7'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        # 'norm_conv8'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        # 'hlb_conv1'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(64 ,  3, 3, 3, 3)*0.430) )}, # 0.3818
+        # 'hlb_conv2'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128, 64, 3, 3, 3)*0.430) )},
+        # 'hlb_conv3'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,128, 3, 3, 3)*0.430) )},
+        # 'hlb_conv4'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,256, 3, 3, 3)*0.430) )},
+        # 'hlb_conv5'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,256, 3, 3, 3)*0.430) )},
+        # 'hlb_conv6'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        # 'hlb_conv7'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        # 'hlb_conv8'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        # 'baseline_conv1' :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   3, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(64 ,  3, 3, 3, 3)*0.430) )}, # 0.3818
+        # 'baseline_conv2' :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 16,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(128, 64, 3, 3, 3)*0.430) )},
+        # 'baseline_conv3' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,128, 3, 3, 3)*0.430) )},
+        # 'baseline_conv4' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  8,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256,256, 3, 3, 3)*0.430) )},
+        # 'baseline_conv5' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 256,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,256, 3, 3, 3)*0.430) )},
+        # 'baseline_conv6' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  4,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        # 'baseline_conv7' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )},
+        # 'baseline_conv8' :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 512,  2,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(512,512, 3, 3, 3)*0.430) )}
+        # }
 # dict = {
 #         'norm_conv1'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,   4, 112,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones( 32,   4, 3, 3, 3)*0.430) )}, # 0.3818
 #         'norm_conv2'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  32,  56,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones( 64,  32, 3, 3, 3)*0.430) )},
@@ -198,18 +194,33 @@ dict = {
 #         'hlb_conv9'      :{'activation':torch.round( torch.normal(0.108, torch.ones(8, 128,  56,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones(256, 256, 3, 3, 3)*0.430) )},
 #         'hlb_conv10'     :{'activation':torch.round( torch.normal(0.108, torch.ones(8,  64, 112,  16,  16)*0.430) ), 'weight': torch.round( torch.normal(-0.137,  torch.ones( 32,  64, 3, 3, 3)*0.430) )},
 #         }
+
+path_activation = "../../../Extract/extract_activation_fuyz_lambda0_1_bias0_1_threshold_lr_x100_threshold_lr_factor0_5_sp2th_init6_reset_th_False_compress_scripts_YAML_prune_quant_sensitivity_module_resumed_yaml/run/run_7/extract/activation_epoch_197.pth.tar"
+path_weight = "../../../Extract/extract_activation_fuyz_lambda0_1_bias0_1_threshold_lr_x100_threshold_lr_factor0_5_sp2th_init6_reset_th_False_compress_scripts_YAML_prune_quant_sensitivity_module_resumed_yaml/run/run_7/extract/parameters_epoch_197.pth.tar"
+weight_dict = torch.load(path_weight)
+for key, value in weight_dict.items():
+    print(key, value.size()) 
+activation_dict = torch.load(path_activation)
+dict = {
+        # 'norm_conv1'     :{'activation': activation_dict['inputs_quant'][:][:][0:16][0:16][0:16]*activation_dict['scale'][0], 'weight': weight_dict['module.conv1.float_weight']}, # 0.3818
+        # 'norm_conv2'     :{'activation': activation_dict['pool1'][:][:][0:16][0:16][0:16]*activation_dict['scale'][1], 'weight': weight_dict['module.conv2.float_weight']},
+        'norm_conv3'     :{'activation': activation_dict['pool2'][:, :, :, 0:16, 0:16]*activation_dict['scale'][2], 'weight': weight_dict['module.conv3a.float_weight'][0:64]*263.7711, 'threshold_activation': 10, 'threshold_weight': 10}
+}
+
 for case, params in dict.items():
     discrete_dir = os.path.join('output', 'c3d', case, 'discrete')
     if not os.path.exists(discrete_dir):
         os.makedirs(discrete_dir)
     
     # tensor = torch.ones([8,  64, 16,  14,  14])
-    numblk_flgact, numblk_act = tensor_to_file_act(output_dir=discrete_dir,tensor=params['activation'], theshold=1) # >= theshold
+    print("activation shape: {}".format(params['activation'].size()))
+    numblk_flgact, numblk_act = tensor_to_file_act(output_dir=discrete_dir,tensor=params['activation'], threshold=params['threshold_activation']) # >= theshold
 
     # tensor = torch.ones([32, 64, 3, 3, 3 ])
-    numblk_weiaddr, numblk_flgwei, numblk_wei = tensor_to_file_wei(output_dir=discrete_dir, tensor=params['weight'])
+    print("weight shape: {}".format(params['weight'].size()))
+    numblk_weiaddr, numblk_flgwei, numblk_wei = tensor_to_file_wei(output_dir=discrete_dir, tensor=params['weight'], threshold=params['threshold_weight'])
     ROM_dir = os.path.join('output', 'c3d', case, 'ROM')
     if not os.path.exists(ROM_dir):
         os.makedirs(ROM_dir)
     cls_gen_coe(discrete_dir, ROM_dir).func_gen_coe(numblk_weiaddr, numblk_flgwei, numblk_wei, numblk_flgact, numblk_act)
-
+    print(numblk_weiaddr, numblk_flgwei, numblk_wei, numblk_flgact, numblk_act)
