@@ -139,12 +139,12 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
             sparsities = np.arange(0,1,0.05)
             # test_func(model =model,test_dataloader= test_dataloader, criterion=criterion, test_size=test_size, device=device )
             which_params = [param_name for param_name, _ in model.named_parameters()]
-            sensitivity = distiller.perform_sensitivity_analysis(model = model,
-                                                                 net_params=which_params,
-                                                                 sparsities=sparsities,
-                                                                 test_func=test_func,
-                                                                 group='element')
-            print("sensitivity: {}".format(sensitivity))
+            # sensitivity = distiller.perform_sensitivity_analysis(model = model,
+            #                                                      net_params=which_params,
+            #                                                      sparsities=sparsities,
+            #                                                      test_func=test_func,
+            #                                                      group='element')
+            # print("sensitivity: {}".format(sensitivity))
             #####
             for inputs, labels in tqdm(trainval_loaders[phase]):
                 scale_threshold = []
@@ -171,12 +171,27 @@ def train_model(conf,model,optimizer,dataset, save_dir, saveName, num_classes, l
                     outputs = model(inputs)
                 else:
                     with torch.no_grad():
-                        if conf.getboolean('set', 'extract' ) and minibatch_id == 0 and epoch % save_epoch == 0:
+                        if conf.getboolean('set', 'extract' ) and minibatch_id == 0 :
                             for net,param in model.named_parameters():
                                 print(net,param.shape)
                                 parameters[net]=param
+
+                            layers = list(model.module._modules.items())
+                            for [name,layer] in layers:
+                                print("****** register_forward_hook: **********", name)
+                                if fnmatch(name,'fc*')==False:
+                                    layer.register_forward_hook(get_activation(name))
                         torch.cuda.empty_cache()
                         outputs = model(inputs)
+                        if conf.getboolean('set', 'extract' ) and minibatch_id == 0 :
+                            for [name,layer] in layers:
+                                activation['scale'] = scale_threshold
+                                if not os.path.exists(os.path.join(save_dir, 'extract')):
+                                    os.makedirs(os.path.join(save_dir, 'extract'))
+                                torch.save(activation, os.path.join(save_dir, 'extract', 'activation_epoch_'+str(epoch) +'.pth.tar'))
+                                torch.save(parameters, os.path.join(save_dir, 'extract', 'parameters_epoch_'+str(epoch) +'.pth.tar'))
+
+
 
                 probs = nn.Softmax(dim=1)(outputs)
                 # probs = outputs
