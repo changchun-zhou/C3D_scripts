@@ -204,8 +204,9 @@ activation_dict = torch.load(path_activation)
 # 
 dict = {
         # 'norm_conv1_92x77'     :{'activation': activation_dict['inputs_quant'][:, :, : , 0:32, 0:32]*activation_dict['scale'][0], 'weight': weight_dict['module.conv1.float_weight']*151.7562, 'threshold_activation': 5, 'threshold_weight': 50}, # 0.3818
-        'baseline_conv1'     :{'activation': activation_dict['inputs_quant'][:, :, : , 0:16, 0:32]*activation_dict['scale'][0], 'weight': weight_dict['module.conv1.float_weight']*151.7562, 'threshold_activation': 0, 'threshold_weight': 0}, 
+        # 'baseline_conv1'     :{'activation': activation_dict['inputs_quant'][:, :, : , 0:16, 0:32]*activation_dict['scale'][0], 'weight': weight_dict['module.conv1.float_weight']*151.7562, 'threshold_activation': 0, 'threshold_weight': 0}, 
         # 'norm_conv2_98x96'     :{'activation': activation_dict['pool1'][:, :, :, 0:16, 0:16]*activation_dict['scale'][1], 'weight': weight_dict['module.conv2.float_weight'][0:64]*228.5491, 'threshold_activation': 9, 'threshold_weight': 14},
+        'ffzs_conv2_70x56'     :{'activation': activation_dict['pool1'][:, :, 0:8, 0:16, 0:16]*activation_dict['scale'][1], 'weight': weight_dict['module.conv2.float_weight'][0:32]*228.5491, 'threshold_activation': 1, 'threshold_weight': 1},
         # 'norm_conv3'     :{'activation': activation_dict['pool2'][:, :, :, 0:16, 0:16]*activation_dict['scale'][2], 'weight': weight_dict['module.conv3a.float_weight'][0:64]*263.7711, 'threshold_activation': 10, 'threshold_weight': 10},
         # 'baseline_conv3'     :{'activation': activation_dict['pool2'][:, 0:64, 0:4, 0:16, 0:16]*activation_dict['scale'][2], 'weight': weight_dict['module.conv3a.float_weight'][0:16, 0: 64]*263.7711, 'threshold_activation': 0, 'threshold_weight': 0}
         # 'norm_conv3_98x90'     :{'activation': activation_dict['pool2'][:, :, :, 0:16, 0:16]*activation_dict['scale'][2], 'weight': weight_dict['module.conv3a.float_weight'][0: 64]*263.7711, 'threshold_activation': 5, 'threshold_weight': 10}
