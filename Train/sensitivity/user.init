@@ -1,0 +1,41 @@
+[set]
+
+# VLSI-05
+
+batch_size = 128
+num_workers = 0
+device_ids = [0, 1]
+
+#VLSI-02
+
+# batch_size = 32
+# num_workers = 0
+# device_ids = [0,1,2,3]
+
+# Autodl
+
+# batch_size = 192
+# #512
+# device_ids = [0,1,2,3,4,5]
+# num_workers = 24
+
+user = fuyz
+compress = scripts/YAML/prune_quant_sensitivity_module.yaml
+resumed_checkpoint_path = Extract/baseline_fuyz_lambda0_bias0_threshold_lr_x30_threshold_lr_factor0.7_init_threshold[0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001]_compress_scripts_YAML_prune_quant_sensitivity_module.yaml/run/run_0/models/_epoch-65_best.pth.tar
+epoch_start_valtest = 30
+extract = false
+
+
+[fine]
+prefix = sensitivity_serialrestore_testval
+requires_grad = false
+lambda = 0
+
+init_threshold = [0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
+# init_threshold = [30,30,30,30,30,30,30,30]
+# init_threshold = [0.1,0.2,1,2,10,10, 20,20]
+# init_threshold = [0,20,0,0,0,0,0,0]
+threshold_lr_x = 30
+threshold_lr_factor = 0.7
+bias = 0
+
