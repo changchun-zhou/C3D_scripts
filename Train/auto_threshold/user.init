@@ -2,34 +2,34 @@
 
 # VLSI-05
 
-# batch_size = 64
+# batch_size = 32
 # num_workers = 0
 # device_ids = [0, 1]
 
 #VLSI-02
 
-# batch_size = 32
-# num_workers = 0
-# device_ids = [0,1,2,3]
+batch_size = 32
+num_workers = 0
+device_ids = [0,1,2,3]
 
 # Autodl
 
-batch_size = 1
-# 512
-device_ids = [0]
-num_workers = 4
+# batch_size = 1
+# # 512
+# device_ids = [0]
+# num_workers = 4
 
 user = fuyz
-compress = scripts/YAML/quant_module.yaml
-resumed_checkpoint_path = Extract/branch_consecutive_frame_serialrestore_trainth3_fuyz_lambda0_bias0_1_threshold_lr_x100_threshold_lr_factor0_5_sp2th_init3_reset_th_False_compress_scripts_YAML_quant_module_yaml/run/run_0/models/_epoch-14_best.pth.tar
+compress = scripts/YAML/prune_quant_sensitivity_module_resumed.yaml
+resumed_checkpoint_path = Extract/_epoch-196_best.pth.tar
 resumed_reset_th = false
 resumed_reset_optim = true
 epoch_start_valtest = 30
-extract = true
+extract = false
 extract_origin = true
 
 [fine]
-prefix = branch_consecutive_frame_serialrestore_extract
+prefix = sensitivity_analysis
 requires_grad = true
 lambda = 0.1
 
